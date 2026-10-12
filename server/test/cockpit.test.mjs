@@ -121,7 +121,7 @@ test('both C172 yokes stay seated in fixed panel bearings through full pitch and
   assert.equal(mount.parent,yoke.parent,'Mount belongs to the stationary cockpit');
   const fixed=mount.matrixWorld.clone(),pivot=new T.Vector3().fromArray(yoke.userData.controlPivot);
   for(const pitch of [-1,0,1])for(const roll of [-1,0,1]){
-   const q=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),-roll*.65);
+   const q=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),roll*.65);
    yoke.position.copy(pivot).sub(pivot.clone().applyQuaternion(q)).add(new T.Vector3(-pitch*.055,0,0));yoke.quaternion.copy(q);root.updateMatrixWorld(true);
    assert.deepEqual(mount.matrixWorld.elements,fixed.elements,'Dashboard bearing must never move with the controls');
    const inverse=yoke.parent.matrixWorld.clone().invert(),box=new T.Box3();

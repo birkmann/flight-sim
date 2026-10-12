@@ -2028,10 +2028,7 @@ fn animate_parts(time: Res<Time>, mut vehicles: Query<&mut Vehicle>, mut parts: 
                 pose
             }
             Role::RotorBlur => shown(&part.rest, part.rest.scale * if v.rotor_rate > 60.0 { 1.0 } else { 0.0001 }),
-            Role::CockpitYoke(pivot) => {
-                let rotation = Quat::from_rotation_x(-v.surfaces.roll * 0.65);
-                part.rest * Transform::from_translation(pivot - rotation * pivot - Vec3::X * v.surfaces.pitch * 0.055).with_rotation(rotation)
-            }
+            Role::CockpitYoke(pivot) => part.rest * cockpit_yoke_pose(pivot, v.surfaces.pitch, v.surfaces.roll),
             Role::CockpitPedal(side) => part.rest * Transform::from_translation(Vec3::X * v.surfaces.yaw * side * 0.04),
             Role::Lamp(phase) => {
                 let cycle = (t + phase.max(0.0)).rem_euclid(1.2);
@@ -2527,6 +2524,14 @@ fn hud(
     js::hud(&state.to_string());
 }
 
+/// Imported cabin axes: +X forward, +Y up, +Z pilot's right.
+/// Positive roll input banks right: the top of the yoke must move toward +Z.
+/// Positive pitch pulls the shaft aft, toward the pilot, along -X.
+fn cockpit_yoke_pose(pivot: Vec3, pitch: f32, roll: f32) -> Transform {
+    let rotation = Quat::from_rotation_x(roll * 0.65);
+    Transform::from_translation(pivot - rotation * pivot - Vec3::X * pitch * 0.055).with_rotation(rotation)
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -2535,6 +2540,29 @@ mod tests {
     use bevy::ecs::system::RunSystemOnce;
 
     use super::*;
+
+    #[test]
+    fn yokes_follow_pilot_roll_and_pitch_input() {
+        for side in [-1.0, 1.0] {
+            let pivot = Vec3::new(0.57955, 1.30055, side * 0.27);
+            for roll in [-1.0, 1.0] {
+                let pose = cockpit_yoke_pose(pivot, 0.0, roll);
+                let top = pose.transform_point(pivot + Vec3::Y * 0.2);
+                // Viewed from the seat, the top follows the commanded turn.
+                assert!((top.z - pivot.z) * roll > 0.0);
+                // The right grip lowers for right roll, rises for left roll.
+                let grip = pose.transform_point(pivot + Vec3::Z * 0.2);
+                assert!((grip.y - pivot.y) * roll < 0.0);
+                assert!(pose.transform_point(pivot).distance(pivot) < 1e-6);
+            }
+            for pitch in [-1.0, 0.0, 1.0] {
+                let center = cockpit_yoke_pose(pivot, pitch, 0.0).transform_point(pivot);
+                assert!((center.x - (pivot.x - pitch * 0.055)).abs() < 1e-6);
+                assert!((center.y - pivot.y).abs() < 1e-6);
+                assert!((center.z - pivot.z).abs() < 1e-6);
+            }
+        }
+    }
 
     #[test]
     fn crew_station_nodes_are_found_by_name_and_extras() {
