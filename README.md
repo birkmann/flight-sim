@@ -1,0 +1,187 @@
+# Flight Simulator
+
+A civilian flight simulator built with Bevy and WebGPU. Fly a sailplane, a C172 or an A320-class
+passenger jet over Google Photorealistic 3D Tiles, explore with a free camera, or plan
+an airport-to-airport flight with weather, navigation and autopilot.
+
+## Aircraft and flying
+
+- **Sailplane:** a 15 m unpowered glider, released in the air.
+- **C172:** a light single-engine aircraft for sightseeing and flight training.
+- **Airliner:** a twin-engine passenger jet with cockpit instruments and approach guidance.
+- Choose a city, then an airport flight, an airborne start, or the free camera.
+- `P` opens flight planning; `Tab` opens aircraft selection; `K` controls weather.
+- Multiplayer shares aircraft positions and weather for flying together.
+
+## Run the existing build
+
+Requires Node.js 22.12 or newer. The included build needs no npm dependencies to run.
+
+```sh
+cp .env.example .env
+# Set CESIUM_ION_TOKEN in .env to an ion token with access to asset 2275207.
+npm start
+```
+
+Open http://127.0.0.1:5197/ in a browser with WebGPU enabled.
+The game requires internet access for terrain, the Draco decoder, place search and live weather.
+The terrain account token stays on the server; no credentials were copied from eu-ui.
+Without a token the page loads, but photorealistic terrain cannot load.
+
+The server also provides the original terrain resolver, live METAR weather, and multiplayer
+signaling. Local multiplayer sessions live in memory and disappear when the server restarts.
+Set `KV_REST_API_URL` and `KV_REST_API_TOKEN` to use shared Redis storage instead.
+`HOST` and `PORT` override the default listening address; remote WebGPU use needs HTTPS.
+
+## Work on the source
+
+Install Rust, the wasm target, and Trunk once:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install --locked trunk
+```
+
+Run these in separate terminals from this repository:
+
+```sh
+npm run dev:api
+```
+
+```sh
+npm run dev
+```
+
+Open http://127.0.0.1:5198/. Trunk rebuilds the Rust app and proxies `/api` to port 5197.
+Use the default ports for this development setup. `npm start` serves the committed build;
+it does not recompile source changes.
+
+```sh
+npm run check:rust
+npm run check:airports
+npm test
+npm run build           # Recompile into prebuilt/ for /
+npm run build:static    # Package prebuilt/ plus assets into dist/
+```
+
+`Cargo.lock` preserves the original Rust dependency versions. A full release build can take
+several minutes. Trunk obtains its wasm-bindgen tooling; wasm-opt is optional.
+The static packaging command needs only Node, so the included Vercel configuration can use
+the committed build. Configure the Cesium token in the hosting environment. Serverless
+multiplayer additionally requires the Redis variables above. No deployment is performed
+by these commands. Static-only hosting must supply the `/api` routes separately.
+
+## Files
+
+- `bevy/src/`: flight simulation, cockpit systems, navigation, weather and rendering.
+- `bevy/*.js`, `bevy/index.html`: menus, instruments, flight planner and controls.
+- `bevy/assets/`: civilian aircraft, thumbnails, flags, shaders and airport data.
+- `bevy/tools/`: airport and geoid data regeneration tools.
+- `bevy/vendor/`: Draco decoder shim and its provenance.
+- `prebuilt/`: the current browser bundle, ready to serve.
+- `server/`, `api/`: standalone Node server and serverless API entry point.
+- `scenario.json`, `bench.js`, `summarize.mjs`: the rendering benchmark (`?bench`).
+
+## Source and assets
+
+Based on `birkmann/eu-ui`, commit `d3604ec7dac5091415c296dca712888c370b1098`,
+with standalone server/build wiring and a civilian aircraft catalogue.
+[The import manifest](docs/import-manifest.json) records original source paths and hashes
+for the retained imported files; current source files may differ from those originals.
+The browser bundle is regenerated from this repository.
+
+Aircraft provenance is in [model credits](bevy/assets/models/CREDITS.md), and the flags
+retain their [license](bevy/assets/flags/LICENSE). Terrain comes from Cesium ion's Google
+Photorealistic 3D Tiles asset. Provider attribution remains visible in the simulator.
+
+## Detailed flight decks and weather
+
+Press **V** or choose **Cockpit** to enter a detailed instrument panel. The C172 has
+analogue flight instruments and a GPS navigator; the airliner has primary flight,
+navigation and engine displays plus autopilot selectors. The new **Sailplane** uses
+the procedural 15 m model and textured SVG cockpit from the local `dwd-hack-26`
+project. Live SVG/canvas instruments are uploaded to the modeled dashboard surfaces.
+The 3D canopy, cabin, controls and panel surrounds remain visible, and the camera
+sits at each model's pilot-eye position. Perspective and occlusion follow head
+look naturally; there is no screen-space cockpit panel. Right-drag looks around;
+**I** toggles the optional autopilot control strip.
+
+The flight view has no permanent header. Chase-view instruments sit at the corners;
+cockpit view uses the instruments inside the aircraft. **Esc** (or the controller's
+**Options/Start** button) opens the flight menu for cameras, weather, planning and
+settings. The small menu button fades after four seconds; moving the pointer to the
+top edge or focusing it reveals it again. The menu supports arrow keys, Tab and D-pad.
+
+Choose **Instruments**, **Minimal**, or **Hide all UI** in the flight menu. **F10**
+toggles the overlays; **Esc** always reopens the menu. Double-tapping the view also
+restores hidden overlays. The display preference is saved locally. Clean view hides
+visual alerts as well, but leaves cockpit instruments and the selected warning audio
+working. Scenery-provider credits remain visible.
+
+**Flight details** shows the active route, next waypoint, runway, distance, estimated
+time, fuel and endurance when available. **Weather** shows simulated conditions and
+a separate airport METAR with its observation time. Missing observations are labelled;
+the widgets do not invent a forecast. The flight planner's Live METAR option applies
+an observation to the simulation.
+
+The sailplane has no engine or fuel consumption. Select an **airborne release** or
+**final approach** in the planner, or select it in the local aircraft menu. It is a
+manual gliding model: there is no tow/winch launch or dedicated thermal lift model.
+Choose a nearby destination within gliding range. Performance and arrival estimates
+are approximate, not a certified aircraft model.
+
+To edit the React/SVG flight decks, install the development dependencies with `npm ci`
+and run `npm run build:deck`; the full `npm run build` also bundles them. Generated
+`bevy/deck.js` and `bevy/deck.css` are included for dependency-free serving. To regenerate
+the model, run `npx playwright install chromium` once, then `npm run model:glider`.
+`CHROMIUM_PATH` can specify an existing Chromium executable. Source and asset credits
+are recorded in [model credits](bevy/assets/models/CREDITS.md).
+
+The C172 asset includes a corrected cabin liner, pilot-eye position and finer interior
+surface grain. `npm run model:c172` reapplies these refinements after importing the
+original C172 model; it leaves an already refined asset unchanged. `npm test` checks
+that the cabin does not obscure the live instrument surface and that the surface
+fits both portrait and landscape views at the default 50° field of view.
+
+The C172 yokes and rudder pedals follow the flight controls. Their dashboard
+bearings remain fixed, with sliding shafts extending behind the panel so they stay
+connected throughout full pitch and roll travel. Its propeller transitions
+to a translucent blur at running speed; wingtip strobes and the red tail beacon flash.
+The radio stack shows live navigation, guidance and engine readings on the 3D panel.
+`npm run model:c172` also installs this animation rig and the radio display surface.
+
+In flight, amber terrain cautions escalate to a red **PULL UP** alert and repeating
+warning tones. Forward probes check the current flight path against loaded terrain
+and scenery, with an approximate time to impact. Stall, excessive descent and landing
+gear alerts also work in local flights. **Warning sounds** in the flight menu mutes
+audio while keeping visual alerts (unless all overlays are hidden). Terrain that has not streamed in cannot be detected.
+
+Validation: `npm run check:deck` type-checks the flight decks; `npm run test:deck`
+checks live instrument pixel updates, absence of floating cockpit overlays,
+mobile briefing, weather controls, flight planning and
+autopilot commands in Chromium using deterministic telemetry and METAR fixtures.
+It also checks terrain/stall alert transitions, warning tones, muting, radio updates,
+menu focus, clean-view recovery and live cockpit textures with overlays hidden.
+These UI checks do not substitute for a hardware WebGPU flight test.
+
+The welcome dashboard, setup, loading state, planner and flight overlays share
+`bevy/flight-ui.css`. The dashboard links to the world map, free flight, aircraft
+selection, sailplane briefing and weather conditions. Destinations can be selected
+on the map or in a responsive grid; searching places works in either view. A compact
+departure summary and action bar stay visible while the content scrolls.
+
+Menu artwork uses five locally shipped, photorealistic aviation illustrations in
+`bevy/assets/ui/aviation/`: a textured Earth, aircraft in flight, and atmospheric
+weather. The welcome background drifts slowly and the weather card has subtle light
+movement; reduced-motion preferences disable both. The SVG brand mark and favicon
+are in `bevy/assets/ui/brand.svg`. Images are illustrative, not gameplay screenshots
+or live weather. See [artwork credits](bevy/assets/ui/CREDITS.md) and the
+[image generation prompts](scripts/ui/artwork-prompts.json).
+
+`npm run render:ui` still regenerates the legacy procedural gallery in `assets/ui/`
+for model previews; it does not overwrite the active `aviation/` artwork.
+
+`npm run model:finish` applies the civilian cabin finish: finer normal-map grain,
+a clear airliner windshield without the unused head-up combiner assembly, and retained
+physical display surfaces. The C172's VSI now distinguishes signed climb/descent and
+its panel includes live warning, autopilot and gear lamps.

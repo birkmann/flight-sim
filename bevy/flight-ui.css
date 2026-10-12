@@ -1,0 +1,459 @@
+/* Shared aviation UI. Artwork is rendered from the simulator's own aircraft. */
+:root:root{--glass:#15212df2;--text:#f4f7fa;--muted:#b9c7d4;--line:#455767;--accent:#66dcff;--accent-2:#66dcff;--surface:#172532;--surface-raised:#263747;--ink:#071f2c;color-scheme:dark}
+:root #sim-start,:root #sim-flight{--text:#f4f7fa;--muted:#b9c7d4;--line:#455767;--accent:#66dcff;--accent-2:#66dcff;color-scheme:dark}
+:root #sim-start{background:#102130e6;font:14px/1.5 Inter,Arial,system-ui,sans-serif}
+:root #sim-start *{box-sizing:border-box}
+:root #sim-start .st-shade{background:linear-gradient(110deg,#091520df,#182c40bb),linear-gradient(#10223666,#0b1724);backdrop-filter:blur(3px)}
+:root #sim-start[data-step="welcome"] .st-shade,:root #sim-start[data-step="vehicle"] .st-shade{background:linear-gradient(#0b1521bb,#152536cc),url('assets/ui/aviation/weather.jpg') center/cover;backdrop-filter:none}
+:root #sim-start .st-head{position:fixed;inset:0 0 auto;height:80px;padding:0 clamp(20px,3vw,56px);display:flex;align-items:stretch;flex-direction:row;gap:0;background:#18242fed;border-bottom:1px solid #92a4b24d;box-shadow:none}
+:root #sim-start .st-brand{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0 30px 0 0;color:var(--text);font:750 15px/1.2 Inter,Arial,sans-serif;letter-spacing:.04em;white-space:nowrap;cursor:pointer}
+:root #sim-start .st-brand b{display:block;font-weight:450;font-size:11px;letter-spacing:.2em;color:var(--muted);margin-top:3px}
+:root #sim-start .st-brand-symbol{color:var(--accent);font-size:32px;transform:rotate(-20deg)}
+:root #sim-start .st-home-nav,:root #sim-start .st-steps li{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 22px;border:0;border-bottom:4px solid #57cbe066;border-radius:0;margin:0 3px;background:transparent;color:var(--muted);font:700 13px/1 Inter,Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+:root #sim-start .st-steps{display:flex;flex-wrap:nowrap;gap:0;height:100%;margin:0;padding:0}
+:root #sim-start .st-steps li[hidden]{display:none}
+:root #sim-start .st-steps li i{font:600 10px/1 Inter,Arial,sans-serif;color:var(--muted);background:none;width:auto;height:auto;font-style:normal}
+:root #sim-start .st-home-nav.on,:root #sim-start .st-steps li.on{color:#142b3a;background:#f4f7fa;border-bottom-color:#18b8e2}
+:root #sim-start .st-steps li.on i{color:#19657d;background:none}
+:root #sim-start .st-steps li.done i{color:var(--accent);background:none}
+:root #sim-start :is(button,input,select,summary,[role=button]):focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+:root #sim-start .st-panel{position:absolute;top:112px;left:max(32px,calc((100vw - 1480px)/2));right:max(32px,calc((100vw - 1480px)/2));bottom:156px;width:auto;max-height:none;background:none;border:0;border-radius:0;box-shadow:none;padding:0;display:flex;flex-direction:column}
+:root #sim-start .st-body{flex:1;margin:0;padding:4px 8px 12px;min-height:0;overflow:auto;scrollbar-color:#7892a6 #182a3855;contain:none}
+:root #sim-start .st-body h1{font:700 clamp(28px,3.2vw,46px)/1.12 Inter,Arial,sans-serif;letter-spacing:-.035em;margin:0 0 12px}
+:root #sim-start .lede{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 28px}
+:root #sim-start .st-eyebrow{font:700 10px/1.4 Inter,Arial,sans-serif;letter-spacing:.18em;color:var(--accent);margin:0 0 12px}
+:root #sim-start .st-welcome-heading{display:flex;justify-content:space-between;align-items:center;gap:20px}
+:root #sim-start .st-welcome-tag{color:var(--muted);font-size:10px;letter-spacing:.08em;white-space:nowrap;display:flex;align-items:center;gap:10px}
+:root #sim-start .st-welcome-tag i{height:4px;width:4px;background:var(--accent);border-radius:50%}
+:root #sim-start .st-dashboard{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;grid-template-rows:clamp(260px,32vh,410px) clamp(220px,25vh,300px)}
+:root #sim-start .st-tile{position:relative;grid-column:span 2;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;padding:0;text-align:left;border:1px solid #8fa4b577;border-radius:14px;overflow:hidden;background:#1d2c3a;color:var(--text);cursor:pointer;box-shadow:0 8px 25px #0003;transition:border-color .18s,transform .18s,box-shadow .18s}
+:root #sim-start .st-tile-world{grid-column:span 3}
+:root #sim-start .st-tile-local{grid-column:span 3}
+:root #sim-start .st-tile>img{position:absolute;inset:0;width:100%;height:calc(100% - 74px);object-fit:cover;transition:transform .5s}
+:root #sim-start .st-tile:is(:hover,:focus-visible){border-color:#d8f5ff;transform:translateY(-3px);box-shadow:0 14px 40px #0005,0 0 0 2px #b5eaff44}
+:root #sim-start .st-tile:hover>img{transform:scale(1.035)}
+:root #sim-start .st-tile-tag{position:absolute;top:18px;left:18px;padding:6px 9px;background:#0a1d2cdb;color:#e4f7ff;font:650 9px/1.3 Inter,Arial,sans-serif;letter-spacing:.12em}
+:root #sim-start .st-tile-caption{z-index:1;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#2b4052,#203444);min-height:74px;width:100%;padding:16px 20px;border-top:1px solid #72899766}
+:root #sim-start .st-tile-caption strong{display:block;font:750 20px/1.2 Inter,Arial,sans-serif;text-transform:uppercase;letter-spacing:-.02em}
+:root #sim-start .st-tile-caption small{display:block;margin-top:5px;font:400 12px/1.4 Inter,Arial,sans-serif;color:#cfdae4}
+:root #sim-start .st-tile-arrow{font:300 29px/1 Inter,Arial,sans-serif;border-right:1px solid #9dafbe;padding-right:14px;color:var(--accent)}
+:root #sim-start .st-tile-conditions{background:linear-gradient(140deg,#193950,#668fa7)}
+/* Destination selection uses the available width; the summary never steals a column. */
+:root #sim-start .st-location-tools{display:flex;align-items:flex-start;gap:24px;justify-content:space-between}
+:root #sim-start .st-location-search{flex:1;max-width:620px;min-width:0}
+:root #sim-start .st-view-switch{display:flex;flex:none;border:1px solid #688194;border-radius:3px;padding:3px;background:#142b3a}
+:root #sim-start .st-view-switch button{border:0;border-radius:2px;padding:11px 16px;background:transparent;color:var(--muted);font:650 12px Inter,Arial,sans-serif;cursor:pointer}
+:root #sim-start .st-view-switch button[aria-pressed=true]{background:#d8eff7;color:#153443}
+:root #sim-start .st-world-map{position:relative;width:100%;aspect-ratio:2;overflow:hidden;border:1px solid #678193;border-radius:3px;background:#122c3d}
+:root #sim-start .st-map-canvas{position:relative;width:100%;aspect-ratio:2}
+:root #sim-start .st-map-canvas>img{display:block;width:100%;height:100%;object-fit:fill}
+:root #sim-start .st-map-heading{position:absolute;top:22px;left:24px;pointer-events:none;display:grid;gap:5px}
+:root #sim-start .st-map-heading>span,:root #sim-start .st-map-detail>span{font-size:9px;letter-spacing:.14em;color:var(--accent)}
+:root #sim-start .st-map-heading small{font-size:12px;color:var(--muted)}
+:root #sim-start .st-map-detail{position:absolute;bottom:22px;left:24px;padding:15px 20px;max-width:310px;background:#102430ed;border-left:3px solid var(--accent);display:grid;gap:5px;pointer-events:none}
+:root #sim-start .st-map-detail strong{font-size:23px;line-height:1.2}
+:root #sim-start .st-map-detail small{font-size:11px;color:var(--muted)}
+:root #sim-start .st-map-marker{position:absolute;width:26px;height:26px;padding:0;border:0;border-radius:50%;background:transparent;transform:translate(-50%,-50%);cursor:pointer;display:grid;place-items:center;color:var(--text);z-index:1}
+:root #sim-start .st-map-marker i{display:block;width:8px;height:8px;border:1px solid #c3f3ff;border-radius:50%;background:#55cfff;box-shadow:0 0 0 4px #4fcfff22}
+:root #sim-start .st-map-marker span{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);padding:6px 9px;background:#e2f6fd;color:#142c3d;font:650 11px Inter,Arial,sans-serif;white-space:nowrap;display:none;pointer-events:none}
+:root #sim-start .st-map-marker:hover,:root #sim-start .st-map-marker:focus,:root #sim-start .st-map-marker.on{z-index:3}
+:root #sim-start .st-map-marker.on i{background:white;box-shadow:0 0 0 5px #61d9ff66}
+:root #sim-start .st-map-marker:hover span,:root #sim-start .st-map-marker:focus span,:root #sim-start .st-map-marker.on span{display:block}
+:root #sim-start .st-map-note{font-size:12px;color:var(--muted);margin-top:16px}
+:root #sim-start .st-search{max-width:620px;margin-bottom:22px}
+:root #sim-start .st-search form{background:#142b3ae8;border:1px solid #678193;border-radius:3px;height:48px;padding:0 14px}
+:root #sim-start .st-search input{font-size:14px;color:var(--text)}
+:root #sim-start .st-search input::placeholder{color:var(--muted)}
+:root #sim-start .st-search .st-results button{background:var(--surface);color:var(--text);border-color:var(--line)}
+:root #sim-start .st-cities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+:root #sim-start .st-city{position:relative;min-height:158px;gap:8px;padding:18px;align-items:stretch;background:#203343f5;border:1px solid #60788c88;border-radius:3px;box-shadow:none;transition:background .18s,border-color .18s}
+:root #sim-start .st-city-region{display:flex;align-items:center;justify-content:space-between;color:#b9ccda;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+:root #sim-start .st-selection-mark{opacity:0;font-size:13px;color:var(--accent)}
+:root #sim-start .st-city.on .st-selection-mark{opacity:1}
+:root #sim-start .st-city .top{gap:8px;display:flex;flex-wrap:wrap}
+:root #sim-start .st-city b{font:700 21px/1.15 Inter,Arial,sans-serif;letter-spacing:-.03em}
+:root #sim-start .st-city p{font-size:12px;line-height:1.5;margin:0;color:#c5d1dc}
+:root #sim-start .st-city .time{font:500 10px/1.3 ui-monospace,monospace;color:var(--muted);margin-left:auto}
+:root #sim-start .st-city-position{font:500 9px/1.5 ui-monospace,monospace;letter-spacing:.06em;color:#9eb6c7;margin-top:auto;padding-top:5px}
+:root #sim-start :is(.st-city,.st-mode,.st-veh).on{border-color:var(--accent);background:#214355;box-shadow:inset 0 -3px var(--accent)}
+:root #sim-start :is(.st-city,.st-mode,.st-veh):hover{border-color:#a6eaff;background:#2a4355;transform:none}
+:root #sim-start .st-quick{max-width:620px;background:#213746;border-color:#597386;border-radius:3px;padding:10px 14px;margin-bottom:14px}
+:root #sim-start .st-quick small{font-size:9px;color:var(--muted)}
+:root #sim-start .st-quick em{font-size:12px;color:var(--accent)}
+/* Experience and hangar: large artwork, short descriptions, comparable specifications. */
+:root #sim-start .st-modes,:root #sim-start .st-vehicles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+:root #sim-start .st-mode{position:relative;display:flex;flex-direction:column;align-items:stretch;padding:0;background:#203343;border-radius:3px;gap:0;overflow:hidden}
+:root #sim-start .st-mode-art{width:100%;aspect-ratio:1.5;object-fit:cover}
+:root #sim-start .st-mode .ico{display:none}
+:root #sim-start .mode-copy{padding:22px;display:flex;flex-direction:column;gap:10px}
+:root #sim-start .mode-name{font:700 22px/1.2 Inter,Arial,sans-serif;letter-spacing:-.025em}
+:root #sim-start .mode-sub{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+:root #sim-start .mode-description{font-size:13px;line-height:1.6;color:#c5d1dc}
+:root #sim-start .mode-check{position:absolute;right:14px;top:14px;background:#102735;border-color:#97c2d7}
+:root #sim-start .mode-check::after{color:var(--ink)}
+:root #sim-start .st-chips{display:none}
+:root #sim-start .st-veh{display:flex;flex-direction:column;align-items:stretch;background:#203343;border-radius:3px;padding:0 0 20px;gap:5px;overflow:hidden}
+:root #sim-start .st-veh img{width:100%;aspect-ratio:1.45;object-fit:cover;border-radius:0;background:#203343;margin-bottom:14px}
+:root #sim-start .st-veh b{font:700 27px/1.2 Inter,Arial,sans-serif;margin:0 20px;letter-spacing:-.03em}
+:root #sim-start .st-veh small{font-size:12px;margin:0 20px;color:var(--accent)}
+:root #sim-start .st-veh-role{font-size:13px;line-height:1.6;color:var(--muted);margin:12px 20px;flex:1}
+:root #sim-start .st-veh-specs{display:flex;gap:25px;padding:15px 20px 0;border-top:1px solid #56708466;font-size:11px;color:var(--muted)}
+:root #sim-start .st-veh-specs strong{display:block;margin-top:3px;font-size:16px;color:var(--text)}
+:root #sim-start .st-note{margin-top:22px;color:var(--muted);font-size:13px}
+/* The compact departure bar is shared by every preparation screen. */
+:root #sim-start .st-overview{position:absolute;left:0;right:0;bottom:30px;top:auto;height:100px;width:auto;display:flex;align-items:center;gap:30px;padding:18px max(40px,calc((100vw - 1464px)/2));background:#172735f5;border:0;border-top:1px solid #71879966;border-radius:0;box-shadow:0 -12px 35px #07141b33}
+:root #sim-start .st-title{position:static;display:flex;align-items:center;gap:18px;padding:0;max-width:none;min-width:0;flex:1;text-align:left;background:none;border-radius:0;text-shadow:none;pointer-events:auto}
+:root #sim-start .st-summary-plane{width:100px;height:60px;object-fit:contain}
+:root #sim-start .st-summary-label{font:650 9px/1.4 Inter,Arial,sans-serif;letter-spacing:.13em;color:var(--muted)}
+:root #sim-start .st-title h3{font:650 18px/1.2 Inter,Arial,sans-serif;letter-spacing:-.02em;margin:4px 0}
+:root #sim-start .st-title h3 span{color:var(--muted);font-weight:400}
+:root #sim-start .st-title .sub{display:flex;gap:7px;color:var(--muted);font-size:11px;font-weight:400}
+:root #sim-start .st-title .flag{width:16px;height:11px}
+:root #sim-start .st-foot{flex:none;display:flex;gap:12px;align-items:center;justify-content:flex-end;padding:0;margin:0!important;border:0}
+:root #sim-start .st-foot .grow{font-size:11px;text-align:right;max-width:130px;color:var(--muted)}
+:root #sim-start .st-btn{border:1px solid #688194;border-radius:3px;background:#243b4c;color:var(--text);padding:13px 18px;font:650 13px/1.2 Inter,Arial,sans-serif;white-space:nowrap}
+:root #sim-start .st-foot .primary{min-height:50px;min-width:190px;justify-content:center;padding:14px 24px;border-color:var(--accent);background:var(--accent);color:var(--ink);border-radius:3px;font:750 14px/1.2 Inter,Arial,sans-serif;letter-spacing:.01em}
+:root #sim-start .st-foot .primary:hover{background:#a2eaff;color:#071f2c}
+:root #sim-start .st-foot .primary:disabled{background:#344957;border-color:#607789;color:#d4dfe8}
+:root #sim-start .st-loading{left:24px;bottom:3px;transform:none;padding:3px 8px;background:#152b3b;color:var(--muted);font-size:10px;border-radius:2px}
+/* Briefing is a two-column workspace instead of a long form. */
+:root #sim-start .st-brief{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:28px;align-items:start}
+:root #sim-start .st-brief>.st-eyebrow,:root #sim-start .st-brief>h1,:root #sim-start .st-brief>.lede{grid-column:1/-1}
+:root #sim-start .st-aircraft-summary{grid-column:1;grid-row:4;grid-template-columns:45% 1fr;background:#203343;border-color:#5b7588;border-radius:3px;gap:0 18px}
+:root #sim-start .st-aircraft-image{min-height:200px;background:radial-gradient(#53748b,#253d4e)}
+:root #sim-start .st-aircraft-image img{height:180px}
+:root #sim-start .st-aircraft-copy{align-self:center}
+:root #sim-start .st-aircraft-copy h2{font-size:28px}
+:root #sim-start .st-aircraft-copy p{color:var(--muted);font-size:13px}
+:root #sim-start .st-aircraft-specs{padding:16px 20px;border-color:#5b7588}
+:root #sim-start .st-departure{grid-column:1;grid-row:5;border:0;padding:22px 0}
+:root #sim-start .st-departure-icon{background:#254657;color:var(--accent)}
+:root #sim-start .st-departure strong{font-size:17px}
+:root #sim-start .st-departure p{color:var(--muted);font-size:13px}
+:root #sim-start .st-conditions{grid-column:2;grid-row:4/7;padding:24px;background:#203343;border:1px solid #5b7588;border-radius:3px}
+:root #sim-start .st-section-head{margin:0 0 24px}
+:root #sim-start .st-section-head h2{font-size:20px}
+:root #sim-start .st-condition-fields{gap:16px}
+:root #sim-start .st-condition-fields select{padding:13px 10px;background:#152c3c;border-color:#7390a5;border-radius:3px;color:var(--text);font-size:13px}
+:root #sim-start .st-condition-metrics{margin-top:22px;gap:12px}
+:root #sim-start .st-condition-metrics>div{background:#152c3c;border-radius:3px;padding:16px 12px}
+:root #sim-start .st-condition-metrics strong{font-size:25px;margin:10px 0}
+:root #sim-start .st-condition-note{color:var(--muted);margin:18px 0 0;font-size:12px;line-height:1.7}
+:root #sim-start .st-condition-note.caution{background:#47371f;color:#ffe0a4}
+:root #sim-start .st-controls{grid-column:1;grid-row:6;border-color:#5b7588}
+:root #sim-start .st-controls summary{font-size:13px}
+:root #sim-start .st-quick-keys{grid-column:1;grid-row:7}
+:root #sim-start .st-overline{color:var(--muted)}
+:root #sim-start .st-text-btn{color:var(--accent);font-size:12px}
+:root #sim-start .st-keys div{border-color:#445d70}
+:root #sim-start kbd{color:#cfdeea;background:#213b4e;border-color:#688499}
+:root #sim-start .st-seg button{background:var(--surface-raised);color:var(--text);border-color:var(--line);border-radius:3px}
+:root #sim-start .st-seg button.on{background:var(--accent);color:var(--ink)}
+:root #sim-deploy{background:linear-gradient(0deg,#0a1b2c99,transparent);color:var(--text)}
+:root #sim-deploy::before,:root #sim-deploy::after{display:none}
+:root #sim-deploy .card{top:auto;left:40px;bottom:65px;transform:none;width:min(540px,calc(100vw - 80px));min-width:0;background:#192c3ced;padding:28px;border:1px solid #738d9e;border-radius:3px;text-align:left;box-shadow:0 15px 60px #0004}
+:root #sim-deploy .k{color:var(--accent);font-size:10px;letter-spacing:.16em}
+:root #sim-deploy h3{font:700 36px/1.15 Inter,Arial,sans-serif;margin:12px 0}
+:root #sim-deploy .bar{width:100%;height:3px;margin:24px 0 0}
+:root #sim-deploy .bar i{background:var(--accent)}
+@media(max-width:1250px){
+ :root #sim-start .st-head{padding:0 24px}:root #sim-start .st-brand{padding-right:20px;font-size:13px}
+ :root #sim-start .st-home-nav,:root #sim-start .st-steps li{padding:0 15px;font-size:11px}
+ :root #sim-start .st-cities{grid-template-columns:repeat(3,minmax(0,1fr))}
+ :root #sim-start .st-welcome-tag{display:none}:root #sim-start .st-tile-caption{padding:15px;gap:10px}
+ :root #sim-start .st-tile-caption strong{font-size:17px}:root #sim-start .st-tile-caption small{font-size:11px}
+ :root #sim-start .st-overview{gap:18px;padding:16px 32px}:root #sim-start .st-summary-plane{width:70px}
+ :root #sim-start .st-foot .grow{display:none}:root #sim-start .st-foot .primary{min-width:160px}
+ :root #sim-start .st-aircraft-summary{grid-template-columns:40% 1fr}:root #sim-start .st-aircraft-image{min-height:170px}
+ :root #sim-start .st-condition-metrics strong{font-size:21px}:root #sim-start .st-conditions{padding:18px}
+}
+@media(max-width:800px){
+ :root #sim-start .st-location-tools{flex-direction:column;gap:0;margin-bottom:18px}
+ :root #sim-start .st-location-search{width:100%}:root #sim-start .st-location-search .st-search{margin-bottom:10px}
+ :root #sim-start .st-view-switch{align-self:flex-end}
+ :root #sim-start .st-map-canvas{min-width:650px;width:650px;height:325px;aspect-ratio:auto}
+ :root #sim-start .st-map-canvas>img{min-width:650px;width:650px;height:325px}
+ :root #sim-start .st-world-map{width:100%;height:430px;aspect-ratio:auto;overflow:auto}
+ :root #sim-start .st-map-detail{position:sticky;left:14px;bottom:14px;max-width:280px;margin:12px 14px}
+ :root #sim-start .st-map-heading{display:none}
+ :root #sim-start .st-head{height:112px;display:flex;flex-wrap:wrap;padding:0 16px;align-content:flex-start}
+ :root #sim-start .st-brand{height:48px;width:100%;padding:0;gap:8px;font-size:12px}
+ :root #sim-start .st-brand b{display:inline;font-size:12px;letter-spacing:.04em;margin-left:4px}
+ :root #sim-start .st-brand-symbol{font-size:22px}
+ :root #sim-start .st-home-nav,:root #sim-start .st-steps li{height:58px;margin:0;padding:0 10px;font-size:10px;letter-spacing:0;gap:3px}
+ :root #sim-start .st-steps li i{display:none}:root #sim-start .st-steps{height:58px;flex:1;justify-content:space-between}
+ :root #sim-start .st-panel{top:134px;left:16px;right:16px;bottom:164px;padding:0}
+ :root #sim-start .st-body{padding:4px 4px 12px}:root #sim-start .st-body h1{font-size:29px}
+ :root #sim-start .lede{font-size:12px;margin-bottom:20px}
+ :root #sim-start .st-dashboard{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;gap:12px}
+ :root #sim-start .st-tile{grid-column:span 1;height:230px}
+ :root #sim-start .st-tile-world{grid-column:1/-1;height:280px}
+ :root #sim-start .st-tile-caption{min-height:85px;padding:12px;gap:8px}
+ :root #sim-start .st-tile>img{height:calc(100% - 85px)}
+ :root #sim-start .st-tile-caption strong{font-size:14px}:root #sim-start .st-tile-caption small{font-size:11px}
+ :root #sim-start .st-tile-arrow{display:none}:root #sim-start .st-tile-tag{font-size:8px;left:10px;top:10px;padding:5px}
+ :root #sim-start .st-weather-art{bottom:85px;transform:scale(.8)}
+ :root #sim-start .st-cities{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ :root #sim-start .st-city{min-height:160px;padding:13px;gap:9px}
+ :root #sim-start .st-city b{font-size:18px}:root #sim-start .st-city p{font-size:11px}
+ :root #sim-start .st-city-region{font-size:8px}:root #sim-start .st-city .time{display:none}
+ :root #sim-start .st-city-position{font-size:8px}:root #sim-start .st-city .flag{width:17px;height:12px}
+ :root #sim-start .st-modes,:root #sim-start .st-vehicles{grid-template-columns:1fr;gap:16px}
+ :root #sim-start .st-mode{display:grid;grid-template-columns:35% 1fr;align-items:stretch}
+ :root #sim-start .st-mode-art{height:100%;object-fit:cover;aspect-ratio:auto}
+ :root #sim-start .mode-copy{padding:18px 14px}:root #sim-start .mode-name{font-size:18px}
+ :root #sim-start .mode-sub{font-size:10px}:root #sim-start .mode-description{font-size:12px}
+ :root #sim-start .mode-check{top:10px;left:10px;right:auto}
+ :root #sim-start .st-veh img{aspect-ratio:1.9}
+ :root #sim-start .st-overview{height:132px;bottom:28px;padding:12px 20px;flex-direction:column;gap:10px;align-items:stretch}
+ :root #sim-start .st-title{gap:12px;flex:none}:root #sim-start .st-summary-plane{width:56px;height:42px}
+ :root #sim-start .st-summary-label{font-size:8px}:root #sim-start .st-title h3{font-size:15px;margin:2px 0}
+ :root #sim-start .st-title .sub{font-size:9px}:root #sim-start .st-title .flag{display:none}
+ :root #sim-start .st-foot{width:100%;gap:10px}:root #sim-start .st-foot .primary{flex:1;min-height:43px;font-size:13px;padding:10px 16px;margin:0}
+ :root #sim-start .st-btn{padding:11px 16px;font-size:12px}
+ :root #sim-start .st-brief{display:flex;flex-direction:column;gap:0}:root #sim-start .st-brief>*{width:100%}
+ :root #sim-start .st-aircraft-summary{grid-template-columns:38% 1fr}:root #sim-start .st-aircraft-image{min-height:130px}
+ :root #sim-start .st-aircraft-image img{height:130px}:root #sim-start .st-aircraft-copy h2{font-size:24px}
+ :root #sim-start .st-conditions{margin-bottom:20px}:root #sim-start .st-condition-fields{gap:10px}
+ :root #sim-start .st-condition-metrics{gap:8px}:root #sim-start .st-condition-metrics>div{padding:12px 8px}
+ :root #sim-start .st-condition-metrics strong{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){:root #sim-start *{animation:none!important;transition:none!important}}
+
+/* In-flight chrome shares the setup palette; scenery has a clear central area. */
+:root #flight-deck{color:var(--text)}
+:root #flight-deck .deck-toolbar{top:0;left:0;right:0;min-height:68px;padding:10px 20px;gap:12px;align-items:center;background:var(--glass);border-bottom:1px solid var(--line);flex-wrap:wrap}
+:root #flight-deck .deck-home{font:600 20px Inter,Arial,system-ui;color:var(--accent);padding:8px 0;letter-spacing:.04em}
+:root #flight-deck .deck-home span{color:var(--text);margin-left:6px}
+:root #flight-deck .deck-flight-chip{border:0!important;box-shadow:none;background:transparent!important;border-radius:0!important;padding:0!important;margin-right:auto}
+:root #flight-deck .deck-icon{display:none}
+:root #flight-deck .deck-tools{background:transparent!important;box-shadow:none;border:0!important;border-radius:0!important;gap:3px;padding:0!important}
+:root #flight-deck .deck-tools button{font-size:12px;padding:9px 11px;border-radius:5px}
+:root #flight-deck .deck-tools .on{background:var(--accent)!important;color:var(--ink)!important}
+:root #flight-deck .deck-briefing{top:86px;bottom:130px;left:20px;width:380px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+:root #flight-deck .deck-briefing h2{font:650 28px Inter,Arial,system-ui;letter-spacing:0}
+:root #flight-deck .deck-briefing header small,:root #flight-deck .deck-route-title span{color:var(--accent)}
+:root #flight-deck .deck-briefing p,:root #flight-deck .deck-metric>span,:root #flight-deck .deck-metric small,:root #flight-deck .deck-source,:root #flight-deck .deck-section-label,:root #flight-deck .deck-details dt,:root #flight-deck .deck-briefing footer{color:var(--muted)}
+:root #flight-deck .deck-metric,:root #flight-deck .deck-empty,:root #flight-deck .deck-metar{background:var(--surface-raised);color:var(--text);border-radius:3px}
+:root #flight-deck .deck-field select,:root #flight-deck .deck-briefing header button{background:var(--surface-raised);color:var(--text);border-color:var(--line)}
+:root #flight-deck .deck-details>div,:root #flight-deck .deck-briefing footer{border-color:var(--line)}
+:root #flight-deck .deck-primary{background:var(--accent);color:var(--ink);border-radius:3px}
+:root #flight-deck .deck-flight-ribbon{bottom:36px;border-radius:4px;background:var(--glass);border-color:var(--line);max-width:calc(100vw - 40px);width:760px;justify-content:space-between}
+:root #flight-deck .deck-flight-ribbon .deck-metric{background:transparent;border-right:1px solid var(--line);min-width:0;flex:1;padding:13px 18px}
+:root #flight-deck .deck-flight-ribbon .deck-metric:last-child{border:0}
+:root #flight-deck .deck-flight-ribbon strong{font:600 24px Inter,Arial,system-ui;white-space:nowrap}
+:root .deck-active #sim-toast{display:none}
+:root .deck-active #fcu{top:88px!important}
+:root #flight-deck .deck-station-controls{top:86px}
+/* Planner and utility menus. */
+:root #sim-flight{background:#060d1677}
+:root #sim-flight .fp{background:var(--surface)!important;border:1px solid var(--line);border-radius:4px;color:var(--text)}
+:root #sim-flight header,:root #sim-flight button{color:var(--text)}
+:root #sim-flight h3,:root #sim-flight small,:root #sim-flight dt{color:var(--muted)}
+:root #sim-flight input,:root #sim-flight select,:root #sim-flight .fp-types button,:root #sim-flight .fp-stats>div,:root #sim-flight .fp-weather-cards>div,:root #sim-flight .fp-metar{background:var(--surface-raised);color:var(--text);border-color:var(--line)}
+:root #sim-flight .fp-weather-cards strong,:root #sim-flight .fp-weather-cards small{color:var(--text)}
+:root #sim-flight .on,:root #sim-flight .fp-types .on{background:#214355;border-color:var(--accent);color:var(--accent)}
+:root #sim-flight .primary{background:var(--accent);color:var(--ink)}
+:root #sim-flight kbd{background:#2a394a;color:#d1dbe6}
+:root #sim-menu .panel{background:var(--surface);border-radius:4px}
+:root #sim-menu nav button.on{color:var(--accent);background:#214355}
+@media(max-width:1150px){:root #flight-deck .deck-home span{display:none}:root #flight-deck .deck-tools button{padding:9px 8px}}
+@media(max-width:800px){
+ :root #flight-deck .deck-toolbar{padding:8px;gap:8px;flex-direction:row}
+ :root #flight-deck .deck-tools{width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+ :root #flight-deck .deck-tools button{font-size:11px;padding:8px}
+ :root #flight-deck .deck-briefing{top:120px;bottom:122px;left:8px;max-width:calc(100vw - 16px)}
+ :root #flight-deck .deck-flight-ribbon{bottom:30px;max-width:calc(100vw - 16px);flex-wrap:wrap}
+ :root #flight-deck .deck-flight-ribbon .deck-metric{padding:8px 9px;flex:1 1 28%}
+ :root #flight-deck .deck-flight-ribbon strong{font-size:22px}
+ :root #flight-deck .deck-flight-ribbon .deck-metric>span{font-size:10px}
+ :root #flight-deck .deck-station-controls{top:120px}
+}
+/* Imported planner controls use the same surfaces and readable secondary text. */
+:root #sim-flight .fp :is(.fp-ap,.fp-results button,.rwy,.seg button,.fp-map.empty,.actions button,.fp-metar code){background:var(--surface-raised);border-color:var(--line);color:var(--text)}
+:root #sim-flight .fp :is(.fp-row select,input[type=search]){background:var(--surface-raised);border-color:var(--line);color:var(--text)}
+:root #sim-flight .fp :is(.hint,.fp-stats dt,.fp-row label,.fp-sel small,.fp-types small,.fp-keys,header .sub,header .close,.fp-results small){color:var(--muted)}
+:root #sim-flight .fp :is(header b,.fp-results i,.rwy small){color:var(--accent)}
+:root #sim-flight .fp :is(.seg button.on,.rwy.on,.fp-types button.on){background:#214355;color:var(--accent);border-color:var(--accent)}
+:root #sim-flight .fp .actions button.primary{background:var(--accent);border-color:var(--accent);color:var(--ink);font:650 15px Inter,Arial,system-ui;text-transform:uppercase;letter-spacing:.05em}
+:root #sim-flight .fp header{border-color:var(--line)}
+:root #sim-flight .fp header b{font:650 21px Inter,Arial,system-ui}
+:root #sim-flight .fp .fp-map .bg{fill:#263747}
+:root #sim-flight .fp .fp-map text{fill:#d8e2ed}
+:root #sim-flight .fp .fp-map .route{stroke:var(--accent)}
+:root #sim-flight .fp .fp-row input[type=range]{accent-color:var(--accent)}
+:root #flight-deck .deck-wind svg text{fill:var(--muted)}
+:root #flight-deck .deck-wind svg path{fill:var(--accent)}
+:root #flight-deck .deck-route-map{border-color:var(--line)}
+:root #flight-deck .deck-route-map rect{fill:#263747}
+:root #flight-deck .deck-route-map text{fill:var(--text)}
+:root #flight-deck .deck-route-map polyline{stroke:var(--accent)}
+:root #flight-deck .deck-briefing,:root #flight-deck .deck-station-controls{top:calc(var(--flight-toolbar-height,68px) + 16px)}
+:root .deck-active #fcu{top:calc(var(--flight-toolbar-height,68px) + 16px)!important}
+@media(max-width:800px){:root #flight-deck .deck-briefing{bottom:150px}}
+:root #sim-flight .fp>.fp-launch{flex:none;display:flex;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line);background:var(--surface);margin:0}
+:root #sim-flight .fp>.fp-launch button{max-width:440px;min-height:48px;border-radius:3px}
+:root #sim-flight .fp-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+:root #sim-flight .fp-grid .fp-map{max-height:260px;margin-top:4px}
+:root #sim-flight .fp input::placeholder{color:var(--muted);opacity:1}
+@media(max-width:960px){:root #sim-flight .fp-layout{grid-template-columns:1fr}:root #sim-flight .fp>.fp-launch button{max-width:none}}
+:root #flight-deck .deck-briefing{bottom:calc(var(--flight-ribbon-height,0px) + 46px)}
+:root #sim-flight .fp-controls{padding:12px;border:1px solid var(--line);border-radius:3px;color:var(--muted);font-size:12px}
+:root #sim-flight .fp-controls summary{cursor:pointer;color:var(--text)}
+:root #flight-deck .deck-alerts{position:absolute;top:calc(var(--flight-toolbar-height,68px) + 16px);left:50%;transform:translateX(-50%);padding:9px 16px;border:1px solid #ffb56b;background:#35261df5;color:#ffd18b;border-radius:3px;font-weight:750;letter-spacing:.08em;z-index:4}
+:root #flight-report .card{background:var(--surface);border-color:var(--line);border-radius:4px}
+:root #flight-report h2{font:650 28px Inter,Arial,system-ui}
+:root #flight-report .kicker{color:var(--accent)}
+:root #flight-report .score i,:root #flight-report .actions button.primary{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+:root #fcu button.on,:root #flight-deck .deck-fcu .active{background:#214355;color:var(--accent);border-color:var(--accent)}
+/* Flight warnings stay visible above the cockpit and never depend on a hidden HUD canvas. */
+:root #flight-deck .deck-hazard-edge{position:absolute;inset:0;border:4px solid #f5b955;box-shadow:inset 0 0 75px #f5b95525;pointer-events:none}
+:root #flight-deck .deck-hazard-edge.warning{border-color:#ff6b58;box-shadow:inset 0 0 90px #ff463538;animation:hazard-pulse 1.6s ease-in-out infinite}
+:root #flight-deck .deck-hazard{position:absolute;top:calc(var(--flight-toolbar-height,68px) + 88px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:14px 20px;background:#382914f5;border:1px solid #ffca73;border-radius:4px;color:#ffda93;box-shadow:0 10px 35px #0005;max-width:calc(100vw - 32px);width:max-content;box-sizing:border-box}
+:root #flight-deck .deck-hazard.warning{background:#421c19f5;border-color:#ff8375;color:#fff0eb}
+:root #flight-deck .deck-hazard strong{font:600 32px/1 Inter,Arial,system-ui;letter-spacing:.06em}
+:root #flight-deck .deck-hazard p{margin:6px 0 0;font-size:12px;color:inherit}
+:root #flight-deck .deck-hazard-icon{font-size:24px;font-weight:800;width:34px;height:34px;display:grid;place-items:center;border:2px solid currentColor;border-radius:50%;flex:none}
+:root #flight-deck .deck-hazard-time{font:600 24px Inter,Arial,system-ui;border-left:1px solid #ffffff44;padding-left:14px;white-space:nowrap}
+:root #flight-deck .deck-hazard-time small{display:block;font:10px system-ui}
+:root #flight-deck .deck-warning-audio{position:absolute;right:16px;top:calc(var(--flight-toolbar-height,68px) + 12px);pointer-events:auto;padding:6px 10px;border:1px solid var(--line);border-radius:5px;background:var(--glass);color:var(--muted);font-size:11px}
+:root #flight-deck .deck-warning-audio.muted{color:var(--accent);border-color:var(--accent)}
+@keyframes hazard-pulse{50%{box-shadow:inset 0 0 110px #ff463555}}
+@media(prefers-reduced-motion:reduce){:root #flight-deck .deck-hazard-edge{animation:none}}
+@media(max-width:600px){:root #flight-deck .deck-hazard{padding:12px;gap:10px}:root #flight-deck .deck-hazard strong{font-size:26px}:root #flight-deck .deck-hazard-time{font-size:22px}}
+@media(min-width:801px) and (max-height:820px){
+ :root #sim-start .st-panel{top:100px;bottom:128px}
+ :root #sim-start .st-overview{height:84px;bottom:28px;padding-top:10px;padding-bottom:10px}
+ :root #sim-start .st-welcome-heading h1{font-size:32px;margin-bottom:8px}
+ :root #sim-start .st-welcome-heading .st-eyebrow{margin-bottom:8px}
+ :root #sim-start .st-welcome-heading .lede{margin-bottom:18px}
+ :root #sim-start .st-dashboard{grid-template-rows:clamp(190px,27vh,222px) clamp(160px,23vh,188px);gap:12px}
+ :root #sim-start .st-tile-caption{min-height:68px;padding:12px 16px}
+ :root #sim-start .st-tile>img{height:calc(100% - 68px)}
+ :root #sim-start .st-tile-caption strong{font-size:17px}
+ :root #sim-start .st-tile-caption small{font-size:11px}
+}
+/* Immersive flight: the world occupies the entire viewport. */
+:root #flight-deck .deck-toolbar{top:20px;right:22px;left:auto;min-height:0;padding:0;border:0;background:none;box-shadow:none;display:block;width:auto;transition:opacity .4s}
+:root #flight-deck .deck-toolbar button{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#10233399;border:1px solid #c6e5f033;border-radius:24px;font:550 12px Inter,Arial,sans-serif;backdrop-filter:blur(12px);color:#edf6fc;box-shadow:0 3px 16px #0002}
+:root #flight-deck .deck-toolbar button>span:first-child{font-size:15px}
+:root #flight-deck .deck-toolbar kbd{background:none;border:1px solid #bfced65c;color:#d3e4ee;font-size:9px;border-radius:4px}
+:root #flight-deck .deck-toolbar.quiet{opacity:0}
+:root #flight-deck .deck-toolbar:is(:hover,:focus-within){opacity:1}
+:root .deck-active #fcu{display:none!important}
+:root #flight-deck .deck-station-controls{top:auto;bottom:38px}
+:root #flight-deck .deck-briefing{top:82px;left:auto;right:22px;bottom:195px;width:390px;border:1px solid #7591a14d;border-radius:18px;background:#132635f5;box-shadow:0 16px 70px #0005;backdrop-filter:blur(18px)}
+:root #flight-deck .deck-hazard{top:35px;border-radius:12px}
+:root #flight-deck .deck-hazard-edge{border-width:2px}
+.flight-hud{position:absolute;inset:0;pointer-events:none;color:white;text-shadow:0 2px 8px #001727bb}
+.flight-compass{position:absolute;left:30px;top:30px;width:72px;height:72px;border:1px solid #e9faff66;border-radius:50%;background:#0a1c2b55;text-align:center;display:grid;place-content:center;box-shadow:0 5px 20px #0001}
+.flight-compass>span{position:absolute;top:-17px;left:0;right:0;font:650 10px Arial}
+.flight-compass i{position:absolute;inset:0;font:22px/1 Arial;font-style:normal;padding-top:2px;color:#88e6ff}
+.flight-compass strong{font-size:14px;font-weight:550}
+.flight-compass small{position:absolute;top:82px;left:-10px;right:-70px;text-align:left;font-size:9px;letter-spacing:.1em;color:#e0edf4}
+.flight-gauge-left,.flight-gauge-right{position:absolute;bottom:38px;display:flex;align-items:flex-end;gap:16px}
+.flight-gauge-left{left:22px}.flight-gauge-right{right:22px}
+.flight-gauge-left>svg,.flight-gauge-right>svg{width:148px;height:148px;filter:drop-shadow(0 4px 9px #0003)}
+.flight-mini-data{display:flex;flex-direction:column;gap:15px;margin-bottom:18px;padding:9px 11px;background:#0a1c2b66;border-radius:6px}
+.flight-mini-data>span{display:block;font:600 9px/1.4 Inter,Arial,sans-serif;letter-spacing:.07em;color:#cce0ed}
+.flight-mini-data b{display:block;font-size:15px;font-weight:550;color:#fff;letter-spacing:0;margin-top:3px}
+.flight-mini-data small{font-size:9px;font-weight:400}
+/* The menu is an overlay with large controller-friendly targets, not permanent chrome. */
+.flight-menu-backdrop{position:absolute;inset:0;pointer-events:auto;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;background:linear-gradient(120deg,#081524c9,#0d263b66);backdrop-filter:blur(14px);z-index:10;padding:24px}
+.flight-menu{width:min(510px,100%);min-width:0;max-width:100%;max-height:calc(100dvh - 48px);display:flex;flex-direction:column;border:1px solid #b1cee044;background:linear-gradient(140deg,#263a4aed,#142636f5);border-radius:24px;box-shadow:0 28px 100px #0006;color:#f0f6fa;animation:flight-menu-in .22s ease both}
+.flight-menu header{display:flex;justify-content:space-between;gap:20px;padding:30px 32px 20px}
+.flight-menu header small{font-size:9px;letter-spacing:.18em;color:#9db6c8;font-weight:650}
+.flight-menu h2{font-size:34px;letter-spacing:-.045em;line-height:1.15;margin:10px 0 7px;font-weight:600}
+.flight-menu header p{font-size:12px;color:#b8ccda;margin:0}
+:root #flight-deck .flight-menu-close{flex:none;border:1px solid #adcfe02c;border-radius:50%;width:34px;height:34px;background:#ffffff0b;color:#e1f0f8;font-size:23px}
+.flight-menu-body{overflow:auto;padding:0 32px 22px;scrollbar-width:thin;min-height:0}
+.flight-menu-camera{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 20px}
+:root #flight-deck .flight-menu-camera button{padding:18px 14px;border:1px solid #adcfe044;border-radius:12px;background:#0c223277;color:#e0eef8;text-align:left;font-size:15px}
+.flight-menu-camera small{display:block;font-size:10px;margin-top:8px;color:#acc3d3}
+:root #flight-deck .flight-menu-camera button[aria-pressed=true]{border-color:#9de8ff;background:#385a6c80;color:white;box-shadow:inset 0 0 0 1px #9de8ff44}
+.flight-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+:root #flight-deck .flight-menu-actions button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:#c3e3f00b;color:#f0f6fa;border:1px solid #b1cee022;border-radius:9px;text-align:left;font-size:12px}
+.flight-menu-actions button span{color:#84cfe9}
+:root #flight-deck .flight-menu button:hover{background:#e2f4ff1c;border-color:#bcdae966}
+:root #flight-deck .flight-menu button:focus-visible,:root #flight-deck .flight-menu select:focus-visible{outline:2px solid white;outline-offset:3px;box-shadow:0 0 22px #9bdeff33}
+.flight-menu-label{font-size:9px;letter-spacing:.14em;color:#b8ccda;margin:25px 0 10px}
+.flight-menu-display{display:flex;background:#061b2b66;border-radius:9px;padding:4px;gap:4px}
+:root #flight-deck .flight-menu-display button{flex:1;padding:11px 6px;border:0;border-radius:6px;background:transparent;color:#b8ccda;font-size:11px}
+:root #flight-deck .flight-menu-display button[aria-pressed=true]{background:#d5ebf6;color:#142d40}
+.flight-menu-hint{font-size:10px;line-height:1.6;color:#9fb8cb;margin:10px 0 20px}
+:root #flight-deck .flight-menu-audio{width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px 0;border:0;border-top:1px solid #b1cee022;border-bottom:1px solid #b1cee022;background:none;color:#eff6fb;text-align:left;font-size:12px}
+.flight-menu-audio small{display:block;color:#9fb8cb;font-size:10px;margin-top:5px}
+.flight-menu-audio b{background:#244c5e;color:#aee9fd;border-radius:20px;font-size:10px;padding:5px 12px;min-width:42px;text-align:center}
+.flight-menu footer{display:flex;align-items:center;gap:16px;padding:20px 32px;border-top:1px solid #b1cee022}
+:root #flight-deck .flight-menu-home{background:none;border:0;color:#b8ccda;padding:12px 0;font-size:11px}
+:root #flight-deck .flight-menu-resume{margin-left:auto;display:flex;align-items:center;justify-content:space-between;gap:25px;background:#e1f0f8;color:#142a3a;border:0;border-radius:9px;padding:14px 20px;font-weight:650;font-size:12px}
+:root #flight-deck .flight-menu-resume:hover{background:white}
+.flight-menu-rate{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;color:#b8ccda;font-size:12px}
+.flight-menu-rate select{background:#112a3b;color:white;border:1px solid #7491a5;border-radius:5px;padding:6px 14px}
+.flight-menu-autopilot{margin-top:18px;color:#c4d9e6;font-size:12px}
+.flight-menu-autopilot summary{cursor:pointer;padding:10px 0}
+:root #flight-deck .flight-menu-autopilot .deck-fcu{display:flex;flex-wrap:wrap;box-shadow:none;padding:12px;max-width:100%;gap:10px;justify-content:flex-start;margin-top:10px}
+body.immersive-hidden :is(#hudcanvas,#sim-bar,#sim-place,#sim-toast,#atc,#fcu,#flight-controls,#sim-cmd,#sim-search,#sim-pad-hint){visibility:hidden!important;pointer-events:none!important}
+@keyframes flight-menu-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:700px){
+ :root #flight-deck .deck-toolbar{top:14px;right:14px;left:auto;width:auto;padding:0}
+ :root #flight-deck .deck-toolbar button{padding:9px 12px;font-size:11px}
+ .flight-compass{width:54px;height:54px;left:22px;top:28px}.flight-compass strong{font-size:12px}.flight-compass small{top:63px;font-size:8px}
+ .flight-gauge-left{left:8px;gap:0}.flight-gauge-right{right:8px;gap:0}.flight-gauge-left>svg,.flight-gauge-right>svg{width:104px;height:104px}
+ .flight-mini-data{display:none}
+ .flight-menu-backdrop{padding:12px}.flight-menu{border-radius:20px;max-height:calc(100dvh - 24px)}
+ .flight-menu header{padding:24px 22px 18px}.flight-menu h2{font-size:30px}.flight-menu-body{padding:0 22px 18px}.flight-menu footer{padding:16px 22px}
+ :root #flight-deck .deck-briefing{top:68px;left:12px;right:12px;width:auto;max-width:none;bottom:155px}
+ :root #flight-deck .deck-hazard{top:90px;max-width:calc(100vw - 24px)}
+}
+@media(prefers-reduced-motion:reduce){.flight-menu{animation:none}:root #flight-deck .deck-toolbar{transition:none}}
+
+/* Shared menu finish and motion. */
+:root #sim-start .st-tile-tag{border:1px solid #b1cee033;border-radius:20px;backdrop-filter:blur(10px)}
+:root #sim-start .st-overview{border-radius:14px;box-shadow:0 12px 45px #0004}
+:root #sim-start .st-foot button,:root #sim-start .st-search form{border-radius:9px}
+:root #sim-start .st-city,:root #sim-start .st-veh,:root #sim-start .st-mode{border-radius:12px}
+:root #sim-menu .panel,:root #sim-flight .fp{border-radius:18px;box-shadow:0 25px 100px #0006}
+@media(prefers-reduced-motion:reduce){:root #sim-start .st-tile,:root #sim-start .st-tile>img{transition:none}:root #sim-start .st-tile:is(:hover,:focus-visible){transform:none}}
+
+/* Aviation identity and photographic menu art. Artwork is decorative, not live weather. */
+:root #sim-start .st-brand{gap:12px;padding-right:30px}
+:root #sim-start .st-brand-symbol{width:48px;height:48px;flex:none;transform:none;filter:drop-shadow(0 4px 9px #0003)}
+:root #sim-start .st-wordmark{display:flex;flex-direction:column;gap:5px;font:800 24px/1 Arial,system-ui,sans-serif;letter-spacing:.055em;text-align:left;color:#f4faff}
+:root #sim-start .st-wordmark b{display:block;font:550 10px/1 Arial,system-ui,sans-serif;letter-spacing:.19em;margin:0;color:#a9d2e4}
+:root #sim-start .st-head{background:linear-gradient(110deg,#0c1b29f5,#142638ed);border-bottom-color:#a2d6e225;backdrop-filter:blur(20px)}
+:root #sim-start[data-step="welcome"] .st-shade,:root #sim-start[data-step="vehicle"] .st-shade{background:none;overflow:hidden}
+:root #sim-start[data-step="welcome"] .st-shade:before,:root #sim-start[data-step="vehicle"] .st-shade:before{content:'';position:absolute;inset:-3%;background:url('assets/ui/aviation/weather.jpg') center/cover;animation:menu-sky-drift 36s ease-in-out infinite alternate}
+:root #sim-start[data-step="welcome"] .st-shade:after,:root #sim-start[data-step="vehicle"] .st-shade:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,#061521ee 0%,#0b2035ba 48%,#14304890),linear-gradient(0deg,#0a1c2cf5,transparent 75%)}
+:root #sim-start .st-eyebrow{color:#9de5fa;letter-spacing:.24em}
+:root #sim-start .st-welcome-heading h1{font-weight:600;letter-spacing:-.045em}
+:root #sim-start .st-welcome-heading .lede{color:#d0dfe8}
+:root #sim-start .st-tile{border-color:#b5d8e43d;box-shadow:0 12px 30px #0004}
+:root #sim-start .st-tile>img{object-position:50% 48%;transition:transform 1.2s cubic-bezier(.2,.65,.3,1);will-change:auto}
+:root #sim-start .st-tile-world>img{object-fit:contain;background:#020914}
+:root #sim-start .st-tile-caption{background:linear-gradient(125deg,#162b3a,#203b4d);border-top-color:#d2edf02b}
+:root #sim-start .st-tile-caption strong{text-transform:none;font-size:21px;font-weight:650;letter-spacing:-.025em}
+:root #sim-start .st-tile-arrow{border:1px solid #acd9ed44;border-radius:50%;padding:0;display:grid;place-items:center;width:32px;height:32px;flex:none;font:300 20px Arial;color:#b3ecff}
+:root #sim-start .st-tile:is(:hover,:focus-visible)>img{transform:scale(1.035)}
+:root #sim-start .st-tile-tag{background:#0b1c2de8;border-color:#d3eafb30;letter-spacing:.13em}
+:root #sim-start .st-weather-atmosphere{position:absolute;inset:0 0 74px;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#ffe5b019 48%,transparent 65%);background-size:200% 100%;mix-blend-mode:screen;animation:menu-sunlight 14s ease-in-out infinite alternate}
+:root #sim-start .st-overview{background:linear-gradient(120deg,#112434f5,#142b3cf5);border-color:#b5d8e430;backdrop-filter:blur(18px)}
+:root #sim-start .st-veh>img{object-fit:cover;border-radius:9px}
+@keyframes menu-sky-drift{from{transform:scale(1) translate3d(-.5%,0,0)}to{transform:scale(1.045) translate3d(.5%,-.5%,0)}}
+@keyframes menu-sunlight{from{background-position:100% 0;opacity:.35}to{background-position:0% 0;opacity:.8}}
+@media(max-width:1100px) and (min-width:801px){:root #sim-start .st-brand{padding-right:18px;gap:8px}:root #sim-start .st-wordmark{font-size:21px}:root #sim-start .st-brand-symbol{width:42px;height:42px}}
+@media(max-width:800px){
+ :root #sim-start .st-brand-symbol{width:34px;height:34px}
+ :root #sim-start .st-wordmark{font-size:18px;letter-spacing:.055em;gap:3px}
+ :root #sim-start .st-wordmark b{display:block;font-size:8px;letter-spacing:.15em;margin:0}
+ :root #sim-start .st-tile{grid-column:1/-1;height:260px}
+ :root #sim-start .st-tile-caption strong{font-size:19px}
+ :root #sim-start .st-tile-arrow{display:grid}
+ :root #sim-start .st-weather-atmosphere{bottom:85px}
+}
+@media(min-width:801px) and (max-height:820px){:root #sim-start .st-tile-caption strong{font-size:17px}:root #sim-start .st-weather-atmosphere{bottom:68px}}
+@media(prefers-reduced-motion:reduce){:root #sim-start .st-shade:before,:root #sim-start .st-weather-atmosphere{animation:none!important}:root #sim-start .st-tile>img{transition:none}:root #sim-start .st-tile:is(:hover,:focus-visible)>img{transform:none}}
+
+.flight-menu-brand{display:flex;align-items:center;gap:9px}.flight-menu-brand img{width:26px;height:26px}
+:root #sim-deploy .k{display:flex;align-items:center;gap:10px}:root #sim-deploy .deploy-brand{width:32px;height:32px}
+@media(min-width:801px) and (max-height:820px){:root #sim-start .st-tile-world>img{object-fit:cover;object-position:center 44%}}

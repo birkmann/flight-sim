@@ -1,0 +1,13 @@
+{
+  "center": { "lat": 52.516275, "lon": 13.377704, "elev": 75 },
+  "units": 400,
+  "seed": 20260925,
+  "sse": 16,
+  "legs": [
+    { "name": "load", "from": 0, "to": 10 },
+    { "name": "orbit", "from": 10, "to": 30 },
+    { "name": "fly", "from": 30, "to": 50 },
+    { "name": "pullout", "from": 50, "to": 70 },
+    { "name": "hold", "from": 70, "to": 80 }
+  ]
+}

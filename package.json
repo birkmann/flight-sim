@@ -1,0 +1,35 @@
+{
+  "name": "flight-sim",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/serve.mjs",
+    "dev:api": "node --env-file-if-exists=.env server/serve.mjs --dev",
+    "dev": "npm run build:deck && cd bevy && trunk serve --release",
+    "build": "bash build-web.sh",
+    "build:static": "node scripts/build-static.mjs",
+    "check:rust": "cargo check --manifest-path bevy/Cargo.toml --target wasm32-unknown-unknown --locked",
+    "check:airports": "node bevy/tools/airports.mjs --check",
+    "test": "node --test server/test/*.test.mjs",
+    "render:ui": "node scripts/render-ui-gallery.mjs",
+    "build:deck": "node scripts/build-deck.mjs",
+    "model:glider": "node scripts/export-glider.mjs",
+    "model:c172": "node scripts/refine-c172.mjs && node scripts/animate-c172.mjs && node scripts/repair-c172-yokes.mjs",
+    "check:deck": "tsc -p bevy/deck/tsconfig.json",
+    "test:deck": "node scripts/check-deck.mjs",
+    "model:finish": "node scripts/refine-flight-decks.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "0.186.0",
+    "typescript": "5.9.3"
+  }
+}

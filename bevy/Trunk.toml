@@ -1,0 +1,27 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[watch]
+ignore = ["./dist", "./target"]
+
+[serve]
+address = "127.0.0.1"
+port = 5198
+open = false
+
+# Terrain, weather and multiplayer are served by `npm run dev:api` from this repository's root.
+[[proxy]]
+backend = "http://127.0.0.1:5197/api/"
+
+# Size pass after the build. Trunk's own wasm-opt step runs without --all-features and fails on current Rust output
+# (bulk memory, reference types), so it is off in index.html (data-wasm-opt="0") and run here instead, from PATH or
+# from Trunk's download cache. --all-features also turns on binaryen's experimental compact import section (wasm-opt
+# 133+), which browsers reject ("Invalid import kind 127"), hence --disable-compact-imports.
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = [
+    "-c",
+    "[ \"$TRUNK_PROFILE\" = release ] || exit 0; W=$(command -v wasm-opt || ls \"$HOME\"/Library/Caches/dev.trunkrs.trunk/wasm-opt-*/bin/wasm-opt 2>/dev/null | head -1); [ -n \"$W\" ] || { echo '[trunk] wasm-opt not found; skipping'; exit 0; }; for f in \"$TRUNK_STAGING_DIR\"/*_bg.wasm; do before=$(wc -c < \"$f\"); \"$W\" --all-features --disable-compact-imports -Oz -o \"$f.tmp\" \"$f\" && mv \"$f.tmp\" \"$f\"; echo \"[trunk] wasm-opt: $before -> $(wc -c < \"$f\") bytes\"; done",
+]

@@ -1,0 +1,28 @@
+[package]
+name = "flight_sim"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bevy_3d_tiles = "=0.4.4"
+# The app/window/render stack the tiles crate does not pull, as in its own web viewer.
+# scene: glTF models as spawnable worlds; mesh_picking: ray casts against the tiles; png: the models' textures.
+# JPEG textures and model animation support.
+bevy = { version = "=0.19.0", default-features = false, features = ["default_app", "bevy_winit", "webgpu", "scene", "mesh_picking", "png", "jpeg", "gltf_animation"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "Location", "UrlSearchParams", "Response"] }
+
+# Size first: the download is one of the things being compared.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = "symbols"

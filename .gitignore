@@ -1,0 +1,12 @@
+/bevy/target/
+/bevy/dist/
+/dist/
+node_modules/
+.env
+.env.*
+!.env.example
+.cache/
+__pycache__/
+*.pyc
+.DS_Store
+.vercel/

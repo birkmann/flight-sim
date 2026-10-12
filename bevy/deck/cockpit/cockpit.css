@@ -1,0 +1,508 @@
+/* cockpit/ overlays — every selector is prefixed .ck- */
+
+.ck-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  --ck-dial-font: "Barlow Condensed", "DIN Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --ck-screen-font: "B612", Inter, ui-sans-serif, system-ui, sans-serif;
+  --ck-mono-font: "B612 Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ck-lime: #c4f06a;
+  --ck-glass: rgb(17 22 32 / 0.74);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #f3f6fa;
+}
+
+/* ------------------------------------------------------------------ cockpit */
+
+.ck-cockpit .ck-canopy {
+  position: absolute;
+  inset: 0;
+  background:
+    /* perspex reflection streaks (sun from upper left) */
+    linear-gradient(112deg, transparent 8%, rgb(255 255 255 / 0.05) 13%, transparent 19%),
+    linear-gradient(104deg, transparent 22%, rgb(255 255 255 / 0.025) 25%, transparent 28%),
+    /* tinted canopy edge at the top corners */
+    radial-gradient(120% 70% at 0% 0%, rgb(6 10 16 / 0.55) 0%, rgb(6 10 16 / 0.18) 28%, transparent 46%),
+    radial-gradient(120% 70% at 100% 0%, rgb(6 10 16 / 0.55) 0%, rgb(6 10 16 / 0.18) 28%, transparent 46%),
+    /* overall vignette */
+    radial-gradient(140% 110% at 50% 40%, transparent 62%, rgb(4 6 10 / 0.38) 100%);
+}
+
+.ck-cabin {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+
+.ck-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  --ck-u: min(calc(39vh / 410), calc(98vw / 1200));
+  height: calc(var(--ck-u) * 422);
+  width: calc(var(--ck-u) * 2400);
+  transform: translateX(-50%);
+  overflow: visible;
+}
+
+.ck-panel--compact {
+  width: 100vw;
+  height: min(calc(100vw * 286 / 400), 38vh);
+}
+
+.ck-yawstring {
+  position: absolute;
+  left: 50%;
+  top: max(80px, 9vh);
+  height: 15vh;
+  width: calc(15vh * 80 / 90);
+  transform: translateX(-50%);
+  overflow: visible;
+}
+.ck-compact .ck-yawstring {
+  top: max(84px, 11vh);
+  height: 11vh;
+  width: calc(11vh * 80 / 90);
+}
+
+/* ------------------------------------------------------------------ HUD */
+
+.ck-glass {
+  background: var(--ck-glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.ck-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgb(214 224 238 / 0.62);
+}
+
+.ck-big {
+  display: block;
+  font-family: var(--ck-screen-font);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.ck-big small {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-left: 4px;
+  color: rgb(214 224 238 / 0.6);
+}
+.ck-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: rgb(214 224 238 / 0.7);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ck-up {
+  color: #a6f07a;
+}
+.ck-down {
+  color: #ff8a78;
+}
+.ck-warn {
+  color: #ffd23f;
+}
+.ck-muted {
+  color: rgb(214 224 238 / 0.6);
+}
+
+.ck-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ck-lime);
+  color: #15200b;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ck-pill-off {
+  background: transparent;
+  color: rgb(214 224 238 / 0.75);
+  box-shadow: inset 0 0 0 1px rgb(214 224 238 / 0.35);
+}
+
+/* main card: speed · vario · altitude */
+.ck-hud-main {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+}
+.ck-cell {
+  min-width: 112px;
+}
+.ck-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgb(255 255 255 / 0.1);
+}
+.ck-cell-vario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 190px;
+}
+
+.ck-vbar {
+  position: relative;
+  width: 10px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  flex: none;
+}
+.ck-vbar-scale {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(10% - 1px), rgb(255 255 255 / 0.18) calc(10% - 1px) 10%);
+  border-radius: 6px;
+}
+.ck-vbar::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: calc(50% - 1px);
+  height: 2px;
+  background: rgb(255 255 255 / 0.65);
+  border-radius: 1px;
+}
+.ck-vbar-fill {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 50%;
+  height: 0;
+  border-radius: 4px;
+}
+.ck-vbar-bug {
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid #ffb238;
+}
+
+/* waypoint card */
+.ck-hud-wp {
+  position: absolute;
+  right: 18px;
+  bottom: 34px;
+  width: 300px;
+  padding: 12px 14px 12px;
+}
+.ck-wp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ck-wp-name {
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ck-wp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.ck-wp-dir {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgb(196 240 106 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(196 240 106 / 0.35);
+  flex: none;
+}
+.ck-wp-meta {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 11.5px;
+  color: rgb(214 224 238 / 0.75);
+  font-variant-numeric: tabular-nums;
+}
+.ck-wp-facts {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 11px;
+  color: rgb(214 224 238 / 0.65);
+  white-space: nowrap;
+}
+.ck-wp-facts b {
+  display: block;
+  font-size: 13.5px;
+  color: #f3f6fa;
+  font-variant-numeric: tabular-nums;
+}
+.ck-wp-facts b.ck-up {
+  color: #a6f07a;
+}
+.ck-wp-facts b.ck-warn {
+  color: #ffd23f;
+}
+.ck-wp-facts b.ck-down {
+  color: #ff8a78;
+}
+
+.ck-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgb(214 224 238 / 0.7);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ck-progress-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.1);
+}
+.ck-progress-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: var(--ck-lime);
+  transform-origin: left center;
+  transition: transform 300ms linear;
+}
+.ck-progress-track i {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.55);
+}
+.ck-progress-track i.ck-done {
+  background: #15200b;
+}
+
+/* environment card */
+.ck-hud-env {
+  position: absolute;
+  left: 18px;
+  bottom: 34px;
+  width: 236px;
+  padding: 12px 14px;
+}
+.ck-env-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ck-clock {
+  font-family: var(--ck-screen-font);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.ck-wind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgb(214 224 238 / 0.75);
+}
+.ck-wind b {
+  font-size: 16px;
+  color: #f3f6fa;
+}
+.ck-wind small {
+  display: block;
+  font-size: 10.5px;
+}
+.ck-env-phase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  min-width: 0;
+}
+.ck-phase {
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.ck-timescale {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: rgb(214 224 238 / 0.55);
+  letter-spacing: 0.04em;
+}
+.ck-hud-arrow {
+  display: block;
+  flex: none;
+}
+
+/* mid-width: tighten */
+@media (max-width: 1240px) {
+  .ck-hud-env {
+    width: 200px;
+  }
+  .ck-hud-wp {
+    width: 262px;
+  }
+  .ck-hud-main {
+    gap: 12px;
+    padding: 10px 14px;
+  }
+  .ck-cell {
+    min-width: 96px;
+  }
+  .ck-cell-vario {
+    min-width: 160px;
+  }
+  .ck-big {
+    font-size: 26px;
+  }
+  .ck-sub {
+    font-size: 10.5px;
+  }
+}
+
+/* compact card (phones / narrow windows) */
+.ck-hud-compact {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(46px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 12px 10px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.ck-compact-nums {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+.ck-compact-nums .ck-big {
+  font-size: 22px;
+}
+.ck-compact-nums .ck-big small {
+  font-size: 10px;
+  margin-left: 2px;
+}
+.ck-compact-nums .ck-label {
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+.ck-compact-vario {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ck-compact-vario .ck-vbar {
+  width: 7px;
+}
+.ck-compact-wp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 13px;
+  min-width: 0;
+}
+.ck-compact-wp .ck-wp-name {
+  margin: 0;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+.ck-compact-wp b {
+  font-variant-numeric: tabular-nums;
+}
+.ck-compact-phase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  min-width: 0;
+}
+.ck-compact-phase .ck-phase {
+  font-size: 11.5px;
+  color: rgb(214 224 238 / 0.8);
+}
+.ck-hud-compact .ck-progress {
+  margin-top: 7px;
+}
+
+/* touch: the on-screen controls (ui/TouchControls) take the lower corners — the HUD moves up under the toolbar */
+html[data-input="touch"] .ck-hud-compact {
+  top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+  bottom: auto;
+  max-width: 480px;
+}
+html[data-input="touch"] .ck-hud-env,
+html[data-input="touch"] .ck-hud-wp {
+  top: 70px;
+  bottom: auto;
+}
+@media (max-height: 460px) {
+  html[data-input="touch"] .ck-hud-compact {
+    padding: 7px 10px;
+  }
+  html[data-input="touch"] .ck-compact-phase,
+  html[data-input="touch"] .ck-hud-compact .ck-progress {
+    display: none;
+  }
+}

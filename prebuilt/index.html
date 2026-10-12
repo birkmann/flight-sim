@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" data-engine="bevy">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flight Simulator</title>
+    <link rel="icon" type="image/svg+xml" href="assets/ui/brand.svg" />
+    
+<script type="module">
+import init, * as bindings from '/flight_sim-e1e69f7cf0f67f40.js';
+const wasm = await init({ module_or_path: '/flight_sim-e1e69f7cf0f67f40_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <link rel="stylesheet" href="flight-ui.css" />
+    
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #c7d6e5; font: 12px/1.4 system-ui, sans-serif; }
+      canvas { display: block; width: 100%; height: 100%; outline: none; }
+      /* The providers' credits: compact, but always visible while tiles are on screen (Map Tiles API and Cesium ion
+         terms). The resolver credits already carry the Google Maps logo, so bevy_3d_tiles' own logo overlay is hidden. */
+      #footer { position: fixed; right: 8px; bottom: 6px; z-index: 10; display: flex; gap: 6px; align-items: center; max-width: 52vw; padding: 1px 6px; border-radius: 4px; background: rgba(10, 14, 20, 0.45); color: rgba(255, 255, 255, 0.78); font-size: 9px; line-height: 1.3; }
+      #footer a { color: inherit; }
+      #credits img { height: 11px; vertical-align: middle; filter: brightness(1.4); }
+      #tt-google-logo { display: none !important; }
+      /* Sandbox menus (ui.js). */
+      :root { --glass: rgba(14, 18, 25, 0.78); --line: rgba(255, 255, 255, 0.09); --text: #e9eef5; --muted: #93a0b2; --accent: #62d6a0; --accent-2: #7cc4ff; }
+      #sim-bar { position: fixed; top: 10px; left: 10px; z-index: 12; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text); font: 600 12px/1 Inter, system-ui, sans-serif; }
+      #sim-bar .brand { padding: 0 10px 0 8px; letter-spacing: 0.14em; font-size: 11px; color: var(--muted); }
+      #sim-bar .brand b { color: var(--accent); }
+      #sim-bar button { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
+      #sim-bar button:hover { background: rgba(255, 255, 255, 0.07); }
+      #sim-bar .clock { padding: 0 10px; color: var(--muted); font: 600 11px ui-monospace, Menlo, monospace; }
+      kbd { display: inline-block; min-width: 14px; padding: 2px 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); color: var(--muted); font: 600 10px ui-monospace, Menlo, monospace; text-align: center; }
+      #sim-menu { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(4, 6, 10, 0.35); }
+      #sim-menu[hidden] { display: none; }
+      #sim-menu .panel { width: min(1180px, calc(100vw - 32px)); height: min(760px, calc(100vh - 40px)); display: flex; flex-direction: column; border-radius: 16px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); color: var(--text); font: 13px/1.45 Inter, system-ui, sans-serif; overflow: hidden; }
+      #sim-menu header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+      #sim-menu nav { display: flex; gap: 4px; }
+      #sim-menu nav button, #sim-menu .close { padding: 8px 14px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; }
+      #sim-menu nav button.on { background: rgba(255, 255, 255, 0.09); color: var(--text); }
+      #sim-menu .close:hover, #sim-menu nav button:hover { color: var(--text); }
+      #sim-body { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+      .assets { display: grid; grid-template-columns: 1fr 340px; gap: 16px; height: 100%; }
+      .assets .left { display: flex; flex-direction: column; min-height: 0; }
+      .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+      .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 600 12px Inter, system-ui, sans-serif; cursor: pointer; }
+      .chip.on { background: var(--accent); border-color: var(--accent); color: #07140d; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; overflow: auto; padding-right: 4px; }
+      .card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px 10px; border-radius: 12px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)); color: var(--text); text-align: left; cursor: pointer; transition: transform 0.12s, border-color 0.12s, background 0.12s; }
+      .card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
+      .card.on { border-color: var(--accent); background: linear-gradient(180deg, rgba(98, 214, 160, 0.14), rgba(98, 214, 160, 0.03)); }
+      .card img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; border-radius: 8px; background: radial-gradient(ellipse at 50% 60%, rgba(160, 190, 220, 0.22), rgba(0, 0, 0, 0) 70%); }
+      .card .name { display: flex; justify-content: space-between; width: 100%; font-weight: 700; font-size: 13px; margin-top: 4px; }
+      .card .cls { color: var(--muted); font-size: 11px; }
+      .detail { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); overflow: auto; }
+      .detail .hero img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; border-radius: 10px; background: radial-gradient(ellipse at 50% 60%, rgba(160, 190, 220, 0.28), rgba(0, 0, 0, 0) 70%); }
+      .detail h2 { margin: 2px 0 0; font-size: 20px; }
+      .detail h2 small { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--muted); }
+      .detail .role { margin: 0; color: #c8d2de; }
+      .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+      .specs div { padding: 8px 10px; border-radius: 9px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
+      .specs dt { color: var(--muted); font-size: 11px; }
+      .specs dd { margin: 2px 0 0; font-weight: 700; }
+      .actions { display: flex; gap: 8px; margin-top: auto; }
+      .actions button, .presets button, .segmented button { flex: 1; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text); font: 700 13px Inter, system-ui, sans-serif; cursor: pointer; }
+      .actions button.primary { background: var(--accent); border-color: var(--accent); color: #07140d; }
+      .actions button:hover, .presets button:hover, .segmented button:hover { filter: brightness(1.15); }
+      .hint { margin: 0; color: var(--muted); font-size: 11px; }
+      .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+      .settings h3 { margin: 4px 0 10px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+      .settings .col > * + h3 { margin-top: 20px; }
+      .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+      .presets button { padding: 9px 6px; font-size: 12px; }
+      .segmented { display: flex; gap: 4px; margin: 4px 0 10px; }
+      .segmented button { padding: 8px 6px; font-size: 12px; }
+      .segmented button.on { background: var(--accent-2); border-color: var(--accent-2); color: #061220; }
+      .k-label { margin-top: 6px; color: var(--muted); font-size: 12px; }
+      .slider { display: grid; grid-template-columns: 120px 1fr 118px; align-items: center; gap: 12px; padding: 7px 0; }
+      .slider .k { color: #c8d2de; }
+      .slider .v { font: 600 12px ui-monospace, Menlo, monospace; color: var(--text); text-align: right; }
+      .slider input { accent-color: var(--accent); width: 100%; }
+      .toggle { display: flex; align-items: center; gap: 10px; padding: 7px 0; color: #c8d2de; cursor: pointer; }
+      .toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+      .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .controls div { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); }
+      .controls h4 { margin: 0 0 4px; font-size: 13px; color: var(--accent); }
+      .controls p { margin: 0; color: #c8d2de; }
+      /* Controller tab. */
+      #sim-menu button:focus-visible, #sim-menu input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+      .pad-status { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); }
+      .pad-status span { color: var(--muted); font-size: 12px; }
+      .pad-buttons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+      .pad-btn { position: relative; overflow: hidden; display: grid; place-items: center; height: 30px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font: 600 11px Inter, system-ui, sans-serif; color: var(--muted); }
+      .pad-btn .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(98, 214, 160, 0.35); }
+      .pad-btn .t { position: relative; }
+      .pad-btn.on { border-color: var(--accent); color: var(--text); }
+      .pad-axes { display: flex; flex-direction: column; gap: 4px; }
+      .pad-axis { display: grid; grid-template-columns: 150px 1fr 48px; align-items: center; gap: 10px; font-size: 12px; color: #c8d2de; }
+      .pad-axis .track { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.07); }
+      .pad-axis .fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 4px; background: var(--accent-2); }
+      .pad-axis .mid { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: rgba(255, 255, 255, 0.35); }
+      .pad-axis .v { font: 600 11px ui-monospace, Menlo, monospace; text-align: right; }
+      .pad-held { margin-top: 4px; color: var(--accent); font-size: 12px; }
+      .pad-map { display: flex; flex-direction: column; gap: 4px; max-height: 330px; overflow: auto; padding-right: 4px; }
+      .pad-row { display: grid; grid-template-columns: 1fr 150px auto; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; }
+      .pad-row:hover { background: rgba(255, 255, 255, 0.03); }
+      .pad-row.capturing { border-color: var(--accent-2); background: rgba(124, 196, 255, 0.08); }
+      .pad-row .k { display: flex; flex-direction: column; }
+      .pad-row small { color: var(--muted); font-size: 11px; }
+      .pad-row .bind { font: 600 12px ui-monospace, Menlo, monospace; color: var(--text); }
+      button.small { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text); font: 600 12px Inter, system-ui, sans-serif; cursor: pointer; }
+      button.small:hover { filter: brightness(1.2); }
+      button.small.danger { margin-top: 10px; color: #ffb4a8; border-color: rgba(255, 120, 100, 0.3); }
+      #sim-bar #sim-pad svg, #sim-menu .close svg { display: block; }
+      #sim-bar button[hidden] { display: none; }
+      /* Multiplayer tab. */
+      #sim-bar #sim-mp.live kbd { background: var(--accent); color: #07140d; border-color: var(--accent); }
+      .field { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 12px; }
+      .field span { color: #c8d2de; }
+      .field input, .join-row input, .invite input { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.25); color: var(--text); font: 13px Inter, system-ui, sans-serif; min-width: 0; }
+      .primary-btn { width: 100%; margin: 6px 0 10px; padding: 11px 14px; border-radius: 9px; border: 1px solid var(--accent); background: var(--accent); color: #07140d; font: 700 13px Inter, system-ui, sans-serif; cursor: pointer; }
+      .join-row, .invite { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 6px 0; }
+      .invite input { font: 12px ui-monospace, Menlo, monospace; }
+      .invite-card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; border: 1px solid var(--accent); background: rgba(98, 214, 160, 0.08); margin-bottom: 8px; }
+      .invite-card span { color: var(--muted); font-size: 12px; }
+      .error { color: #ffb4a8; font-size: 12px; }
+      .players { display: flex; flex-direction: column; gap: 6px; }
+      .player { display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); }
+      .player .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+      .player .what { color: var(--muted); font-size: 12px; }
+      .player .badge { padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--muted); font-size: 11px; }
+      @media (max-width: 860px) { .assets, .settings, .controls { grid-template-columns: 1fr; } #sim-bar button span { display: none; } }
+      /* Where you are, and the place search (place.js). */
+      #sim-bar #sim-search-btn.on { background: rgba(255, 255, 255, 0.09); }
+      #sim-place { position: fixed; top: 10px; right: 10px; z-index: 12; min-width: 220px; max-width: min(360px, calc(100vw - 20px)); display: flex; flex-direction: column; gap: 2px; padding: 10px 14px 11px; border-radius: 12px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text); font: 12px/1.35 Inter, system-ui, sans-serif; pointer-events: none; }
+      #sim-place .kicker { display: flex; justify-content: space-between; align-items: center; min-height: 18px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+      #sim-place .cancel { pointer-events: auto; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--text); font: 600 11px Inter, system-ui, sans-serif; letter-spacing: 0; text-transform: none; cursor: pointer; }
+      #sim-place .cancel[hidden] { display: none; }
+      #sim-place .name { font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #sim-place .sub { display: flex; align-items: center; gap: 7px; min-width: 0; color: #c8d2de; }
+      #sim-place .sub[hidden], #sim-place .sub .flag[hidden] { display: none; }
+      #sim-place .sub span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #sim-place .sub .flag { flex: none; width: 20px; height: 15px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 1px 3px rgba(0, 0, 0, 0.35); }
+      #sim-place .bar { height: 3px; margin: 5px 0 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+      #sim-place .bar[hidden] { display: none; }
+      #sim-place .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.25s linear; }
+      #sim-place .coords { margin-top: 3px; color: var(--muted); font: 600 11px ui-monospace, Menlo, monospace; white-space: nowrap; }
+      #sim-search { position: fixed; top: 62px; left: 10px; z-index: 41; width: min(420px, calc(100vw - 20px)); display: flex; flex-direction: column; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); color: var(--text); font: 13px/1.4 Inter, system-ui, sans-serif; overflow: hidden; }
+      #sim-search[hidden] { display: none; }
+      #sim-search form { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+      #sim-search input { flex: 1; min-width: 0; padding: 4px 0; border: 0; outline: none; background: transparent; color: var(--text); font: 15px Inter, system-ui, sans-serif; }
+      #sim-search input::-webkit-search-cancel-button { filter: invert(1) opacity(0.5); }
+      #sim-search .state { padding: 8px 14px 0; color: var(--muted); font-size: 12px; }
+      #sim-search .state:empty { display: none; }
+      #sim-search .results { list-style: none; margin: 0; padding: 6px; max-height: min(420px, calc(100vh - 160px)); overflow: auto; }
+      #sim-search .results:empty { display: none; }
+      #sim-search .results button { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 9px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+      #sim-search .results li.on button { background: rgba(255, 255, 255, 0.08); }
+      #sim-search .results small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #sim-search .results .t { color: var(--accent-2); font-size: 11px; text-transform: capitalize; }
+      @media (max-width: 860px) { #sim-place { top: auto; bottom: 80px; } }
+    </style>
+    <!-- Draco decoding for the Google tiles (lazy-loads Google's decoder on first use); see vendor/README.md. -->
+    <script src="shims.js"></script>
+    <script>
+      // The benchmark overlay only runs with ?bench; the default page is the sandbox.
+      if (!new URLSearchParams(location.search).has("bench")) document.documentElement.dataset.bench = "off";
+    </script>
+    <script src="bench.js"></script>
+    <!-- The sandbox HUD, drawn from the state the app hands to window.__hud each frame. -->
+    <script src="hud.js"></script>
+    <!-- After hud.js: plays the on-foot sounds from the HUD state it is handed. -->
+    <!-- Before ui.js: its key handler must run first while the start screen is open. -->
+    <script src="start.js"></script>
+    <script src="ui.js"></script>
+    <script src="pad.js"></script>
+    <script src="net.js"></script>
+    <!-- Before place.js: while flying, "/" is the speed brake, not its search. -->
+    <script src="flight.js"></script>
+    <script src="cockpit.js"></script>
+    <!-- The crew stations' screens, drawn for the app to put on the 3D panels. -->
+    <script src="displays.js"></script>
+    <script src="place.js"></script>
+    <link rel="stylesheet" href="deck.css" />
+    <script src="deck.js"></script>
+  <link rel="modulepreload" href="/flight_sim-e1e69f7cf0f67f40.js" crossorigin="anonymous" integrity="sha384-2Vq6BvY5wQiLVPFemGGMcAS91dVSmcmndDz6lOL2gxfZNqgEAEMMIEti10BQKoTt"><link rel="preload" href="/flight_sim-e1e69f7cf0f67f40_bg.wasm" crossorigin="anonymous" integrity="sha384-24D14M78/mXeFSvebM9JRGv16wrfvwUwY+PFOUdSV148vK+uuqXosrIHPsvWfOle" as="fetch" type="application/wasm"></head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div id="footer"><span id="credits"></span><span id="attribution"></span></div>
+  </body>
+</html>
