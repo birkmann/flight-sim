@@ -677,7 +677,7 @@
     for (const c of list) {
       const card = el(`
         <button aria-pressed="${pick.city === c}" class="st-city${pick.city === c ? " on" : ""}">
-          <span class="st-city-region">${esc(c.country)}<span class="st-selection-mark" aria-hidden="true">✓</span></span><span class="top">${flagImg(c.cc)}<b>${esc(c.name)}</b><span class="time" data-tz="${c.id}">${localTime(c)}</span></span>
+          <span class="st-city-region">${esc(c.country)}<span class="st-selection-mark" aria-hidden="true">✓ Selected</span></span><span class="top">${flagImg(c.cc)}<b>${esc(c.name)}</b><span class="time" data-tz="${c.id}">${localTime(c)}</span></span>
           <p>${esc(c.tagline ?? c.country)}</p><span class="st-city-position">${fmtCoord(c.lat,c.lon)}</span>
           
         </button>`);
@@ -758,7 +758,7 @@
     if (window.__flightOpen) modes.push(["airports", ICON.vehicle, "Fly between airports", "Plan a flight, then fly it", "Set your departure, destination and weather. Start on a runway, in cruise or on final approach."]);
     const box = v.querySelector(".st-modes");
     for (const [id, icon, name, sub, description] of modes) {
-      const b = el(`<button class="st-mode${pick.mode === id ? " on" : ""}" aria-pressed="${pick.mode === id}"><img class="st-mode-art" src="assets/ui/aviation/${id === "free" ? "world" : id === "airports" ? "airliner" : "c172"}.jpg" alt=""/><span class="ico" aria-hidden="true">${icon}</span><span class="mode-copy"><span class="mode-name">${name}</span><span class="mode-sub">${sub}</span><span class="mode-description">${esc(description)}</span></span><span class="mode-check" aria-hidden="true"></span></button>`);
+      const b = el(`<button class="st-mode${pick.mode === id ? " on" : ""}" aria-pressed="${pick.mode === id}"><img class="st-mode-art" src="assets/ui/aviation/${id === "free" ? "world" : id === "airports" ? "airliner" : "c172"}.jpg" alt=""/><span class="ico" aria-hidden="true">${icon}</span><span class="mode-copy"><span class="mode-name">${name}</span><span class="mode-sub">${sub}</span><span class="mode-description">${esc(description)}</span></span><span class="mode-check st-card-selection" aria-hidden="true"><span>✓</span>Selected</span></button>`);
       b.onclick = () => {
         pick.mode = id;
         box.querySelectorAll(".st-mode").forEach((x) => x.classList.toggle("on", x === b));
@@ -798,7 +798,7 @@
     const list = all.filter((a) => a.cat === pick.cat);
     for (const a of list) {
       const why = unavailable(a);
-      const b = el(`<button aria-pressed="${pick.asset === a.id && !why}" class="st-veh${pick.asset === a.id && !why ? " on" : ""}" ${why ? "disabled" : ""} title="${esc(why || a.role)}"><img src="assets/ui/aviation/${a.id}.jpg" alt="" loading="lazy" /><b>${esc(a.name)}</b><small>${esc(a.cls)}</small><span class="st-veh-role">${esc(a.role)}</span><span class="st-veh-specs">${a.specs.slice(0,2).map(([k,v])=>`<span>${esc(k)}<strong>${esc(v)}</strong></span>`).join("")}</span>${why ? `<span class="why">${esc(why)}</span>` : ""}</button>`);
+      const b = el(`<button aria-pressed="${pick.asset === a.id && !why}" class="st-veh${pick.asset === a.id && !why ? " on" : ""}" ${why ? "disabled" : ""} title="${esc(why || a.role)}"><img src="assets/ui/aviation/${a.id}.jpg" alt="" loading="lazy" /><b>${esc(a.name)}</b><small>${esc(a.cls)}</small><span class="st-card-selection" aria-hidden="true"><span>✓</span>Selected</span><span class="st-veh-role">${esc(a.role)}</span><span class="st-veh-specs">${a.specs.slice(0,2).map(([k,v])=>`<span>${esc(k)}<strong>${esc(v)}</strong></span>`).join("")}</span>${why ? `<span class="why">${esc(why)}</span>` : ""}</button>`);
       b.onclick = () => {
         pick.asset = a.id;
         grid.querySelectorAll(".st-veh").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed",String(x === b)); });

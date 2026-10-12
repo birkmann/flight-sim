@@ -68,15 +68,17 @@
 :root #sim-start .st-cities{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 :root #sim-start .st-city{position:relative;min-height:158px;gap:8px;padding:18px;align-items:stretch;background:#203343f5;border:1px solid #60788c88;border-radius:3px;box-shadow:none;transition:background .18s,border-color .18s}
 :root #sim-start .st-city-region{display:flex;align-items:center;justify-content:space-between;color:#b9ccda;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-:root #sim-start .st-selection-mark{opacity:0;font-size:13px;color:var(--accent)}
+:root #sim-start .st-selection-mark{opacity:0;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;color:#06232e;background:#70e1ff;border-radius:20px;padding:4px 8px}
 :root #sim-start .st-city.on .st-selection-mark{opacity:1}
 :root #sim-start .st-city .top{gap:8px;display:flex;flex-wrap:wrap}
 :root #sim-start .st-city b{font:700 21px/1.15 Inter,Arial,sans-serif;letter-spacing:-.03em}
 :root #sim-start .st-city p{font-size:12px;line-height:1.5;margin:0;color:#c5d1dc}
 :root #sim-start .st-city .time{font:500 10px/1.3 ui-monospace,monospace;color:var(--muted);margin-left:auto}
 :root #sim-start .st-city-position{font:500 9px/1.5 ui-monospace,monospace;letter-spacing:.06em;color:#9eb6c7;margin-top:auto;padding-top:5px}
-:root #sim-start :is(.st-city,.st-mode,.st-veh).on{border-color:var(--accent);background:#214355;box-shadow:inset 0 -3px var(--accent)}
-:root #sim-start :is(.st-city,.st-mode,.st-veh):hover{border-color:#a6eaff;background:#2a4355;transform:none}
+:root #sim-start :is(.st-city,.st-mode,.st-veh):hover:not(.on){border-color:#a6eaff;background:#2a4355;transform:none}
+:root #sim-start :is(.st-city,.st-mode,.st-veh).on{border-color:#70e1ff;background:linear-gradient(135deg,#29566b,#1c3b50);box-shadow:0 0 0 2px #70e1ff,0 8px 28px #00131b66}
+:root #sim-start :is(.st-city,.st-mode,.st-veh).on::before{content:'';position:absolute;inset:0;z-index:1;border:2px solid #70e1ff;border-radius:inherit;pointer-events:none}
+:root #sim-start :is(.st-city,.st-mode,.st-veh):focus-visible{outline:2px solid #fff;outline-offset:6px}
 :root #sim-start .st-quick{max-width:620px;background:#213746;border-color:#597386;border-radius:3px;padding:10px 14px;margin-bottom:14px}
 :root #sim-start .st-quick small{font-size:9px;color:var(--muted)}
 :root #sim-start .st-quick em{font-size:12px;color:var(--accent)}
@@ -89,8 +91,9 @@
 :root #sim-start .mode-name{font:700 22px/1.2 Inter,Arial,sans-serif;letter-spacing:-.025em}
 :root #sim-start .mode-sub{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
 :root #sim-start .mode-description{font-size:13px;line-height:1.6;color:#c5d1dc}
-:root #sim-start .mode-check{position:absolute;right:14px;top:14px;background:#102735;border-color:#97c2d7}
-:root #sim-start .mode-check::after{color:var(--ink)}
+:root #sim-start :is(.st-mode,.st-veh) .st-card-selection{position:absolute;right:14px;top:14px;z-index:2;display:flex;align-items:center;gap:6px;width:auto;height:auto;margin:0;padding:7px 11px;border:1px solid #c5f5ff;border-radius:20px;background:#70e1ff;color:#06232e;font:700 12px/1.2 Arial,sans-serif;box-shadow:0 2px 12px #00131b66;visibility:hidden}
+:root #sim-start :is(.st-mode,.st-veh).on .st-card-selection{visibility:visible;background:#70e1ff;border-color:#c5f5ff}
+:root #sim-start .st-mode.on .mode-check::after{content:none}
 :root #sim-start .st-chips{display:none}
 :root #sim-start .st-veh{display:flex;flex-direction:column;align-items:stretch;background:#203343;border-radius:3px;padding:0 0 20px;gap:5px;overflow:hidden}
 :root #sim-start .st-veh img{width:100%;aspect-ratio:1.45;object-fit:cover;border-radius:0;background:#203343;margin-bottom:14px}
@@ -201,6 +204,7 @@
  :root #sim-start .st-modes,:root #sim-start .st-vehicles{grid-template-columns:1fr;gap:16px}
  :root #sim-start .st-mode{display:grid;grid-template-columns:35% 1fr;align-items:stretch}
  :root #sim-start .st-mode-art{height:100%;object-fit:cover;aspect-ratio:auto}
+ :root #sim-start .st-mode .st-card-selection{left:8px;right:auto;top:8px;padding:5px 7px;font-size:10px;gap:4px}
  :root #sim-start .mode-copy{padding:18px 14px}:root #sim-start .mode-name{font-size:18px}
  :root #sim-start .mode-sub{font-size:10px}:root #sim-start .mode-description{font-size:12px}
  :root #sim-start .mode-check{top:10px;left:10px;right:auto}
