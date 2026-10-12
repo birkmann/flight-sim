@@ -1,10 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
  <defs>
-  <linearGradient id="enamel" x1="8" y1="4" x2="55" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="#207c9f"/><stop offset=".55" stop-color="#13506e"/><stop offset="1" stop-color="#102e49"/></linearGradient>
-  <linearGradient id="edge" x1="8" y1="2" x2="52" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#a1e8fc" stop-opacity=".8"/><stop offset="1" stop-color="#65c9ea" stop-opacity=".18"/></linearGradient>
+  <linearGradient id="aircraft" x1="32" y1="17" x2="32" y2="55" gradientUnits="userSpaceOnUse"><stop stop-color="#e3f8ff"/><stop offset="1" stop-color="#72cce5"/></linearGradient>
  </defs>
- <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#enamel)" stroke="url(#edge)" stroke-width="1.5"/>
- <path d="M11 44c12-9 28-9 42 0" stroke="#76daef" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
- <path d="M32 11c1.6 0 2.8 3.2 2.8 6.1v10.1L53 33v4l-18.2-2.4-.7 10.2 6.9 3.6V51l-9-1.8-9 1.8v-2.6l6.9-3.6-.7-10.2L11 37v-4l18.2-5.8V17.1C29.2 14.2 30.4 11 32 11Z" fill="#f4fcff"/>
- <path d="M31.2 17.2c0-1.1.3-2 .8-2.8.5.8.8 1.7.8 2.8v6.5h-1.6z" fill="#79d8ee"/>
+ <path d="M10 28a23 23 0 0 1 44 0" stroke="#a6dfed" stroke-width="1.5" stroke-linecap="round"/>
+ <path d="M32 16c1.25 1.8 1.9 5.4 2.1 8.6l.5 8.3L55 42v2l-20.5-4.5-.6 9.1 6.1 4v1.6L32 52l-8 2.2v-1.6l6.1-4-.6-9.1L9 44v-2l20.4-9.1.5-8.3c.2-3.2.85-6.8 2.1-8.6Z" fill="url(#aircraft)"/>
+ <path d="M13 52h7m24 0h7M32 7v3" stroke="#7bc8de" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
 </svg>

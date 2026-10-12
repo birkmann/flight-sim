@@ -417,10 +417,10 @@ body.immersive-hidden :is(#hudcanvas,#sim-bar,#sim-place,#sim-toast,#atc,#fcu,#f
 @media(prefers-reduced-motion:reduce){:root #sim-start .st-tile,:root #sim-start .st-tile>img{transition:none}:root #sim-start .st-tile:is(:hover,:focus-visible){transform:none}}
 
 /* Aviation identity and photographic menu art. Artwork is decorative, not live weather. */
-:root #sim-start .st-brand{gap:12px;padding-right:30px}
-:root #sim-start .st-brand-symbol{width:48px;height:48px;flex:none;transform:none;filter:drop-shadow(0 4px 9px #0003)}
-:root #sim-start .st-wordmark{display:flex;flex-direction:column;gap:5px;font:800 24px/1 Arial,system-ui,sans-serif;letter-spacing:.055em;text-align:left;color:#f4faff}
-:root #sim-start .st-wordmark b{display:block;font:550 10px/1 Arial,system-ui,sans-serif;letter-spacing:.19em;margin:0;color:#a9d2e4}
+:root #sim-start .st-brand{gap:10px;padding-right:30px}
+:root #sim-start .st-brand-symbol{width:48px;height:48px;flex:none;transform:none;filter:none}
+:root #sim-start .st-wordmark{display:flex;flex-direction:column;gap:8px;font:700 21px/1 Arial,system-ui,sans-serif;letter-spacing:.15em;text-align:left;color:#f4faff}
+:root #sim-start .st-wordmark b{display:block;font:600 8px/1 Arial,system-ui,sans-serif;letter-spacing:.36em;margin:0;color:#bbd9e5}
 :root #sim-start .st-head{background:linear-gradient(110deg,#0c1b29f5,#142638ed);border-bottom-color:#a2d6e225;backdrop-filter:blur(20px)}
 :root #sim-start[data-step="welcome"] .st-shade,:root #sim-start[data-step="vehicle"] .st-shade{background:none;overflow:hidden}
 :root #sim-start[data-step="welcome"] .st-shade:before,:root #sim-start[data-step="vehicle"] .st-shade:before{content:'';position:absolute;inset:-3%;background:url('assets/ui/aviation/weather.jpg') center/cover;animation:menu-sky-drift 36s ease-in-out infinite alternate}
@@ -444,8 +444,8 @@ body.immersive-hidden :is(#hudcanvas,#sim-bar,#sim-place,#sim-toast,#atc,#fcu,#f
 @media(max-width:1100px) and (min-width:801px){:root #sim-start .st-brand{padding-right:18px;gap:8px}:root #sim-start .st-wordmark{font-size:21px}:root #sim-start .st-brand-symbol{width:42px;height:42px}}
 @media(max-width:800px){
  :root #sim-start .st-brand-symbol{width:34px;height:34px}
- :root #sim-start .st-wordmark{font-size:18px;letter-spacing:.055em;gap:3px}
- :root #sim-start .st-wordmark b{display:block;font-size:8px;letter-spacing:.15em;margin:0}
+ :root #sim-start .st-wordmark{font-size:18px;letter-spacing:.15em;gap:6px}
+ :root #sim-start .st-wordmark b{display:block;font-size:7px;letter-spacing:.33em;margin:0}
  :root #sim-start .st-tile{grid-column:1/-1;height:260px}
  :root #sim-start .st-tile-caption strong{font-size:19px}
  :root #sim-start .st-tile-arrow{display:grid}
