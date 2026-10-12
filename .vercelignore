@@ -1,0 +1,11 @@
+# Deploy the committed browser build, not local compiler output or credentials.
+.git
+.vercel
+.env
+.env.*
+node_modules
+dist
+bevy/target
+bevy/dist
+.cache
+**/__pycache__

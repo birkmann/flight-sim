@@ -4,6 +4,17 @@ A civilian flight simulator built with Bevy and WebGPU. Fly a sailplane, a C172 
 passenger jet over Google Photorealistic 3D Tiles, explore with a free camera, or plan
 an airport-to-airport flight with weather, navigation and autopilot.
 
+**Play online:** https://flight-sim-eight.vercel.app/ (requires a WebGPU-capable browser).
+
+Production is hosted by the `flight-sim` Vercel project, connected to
+`birkmann/flight-sim` on GitHub. Pushes to `main` deploy the committed `prebuilt/`
+bundle and `bevy/assets/` using `npm run build:static`. Rebuild source changes before
+pushing; static packaging does not compile Rust or bundle the flight deck.
+The production `CESIUM_ION_TOKEN` is a sensitive server-only Vercel variable.
+Multiplayer requires `KV_REST_API_URL` and `KV_REST_API_TOKEN`; these are not yet
+configured for production. `.vercelignore` excludes local credentials and build caches
+from CLI uploads.
+
 ## Aircraft and flying
 
 - **Sailplane:** a 15 m unpowered glider, released in the air.
