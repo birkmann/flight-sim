@@ -13,11 +13,11 @@
   const CATS = [["all", "All aircraft"]];
 
   const PRESETS = [
-    ["Clear", { clouds: 0.05, precipitation: 0, visibility: 40000, lightning: false, snow: false, cloudBase: 2200, windSpeed: 3 }],
-    ["Few clouds", { clouds: 0.3, precipitation: 0, visibility: 40000, lightning: false, snow: false, cloudBase: 1800, windSpeed: 4 }],
-    ["Scattered", { clouds: 0.55, precipitation: 0, visibility: 35000, lightning: false, snow: false, cloudBase: 1500, windSpeed: 6 }],
+    ["Clear", { clouds: 0.05, precipitation: 0, visibility: 80000, lightning: false, snow: false, cloudBase: 2200, windSpeed: 3 }],
+    ["Few clouds", { clouds: 0.3, precipitation: 0, visibility: 60000, lightning: false, snow: false, cloudBase: 1800, windSpeed: 4 }],
+    ["Scattered", { clouds: 0.55, precipitation: 0, visibility: 40000, lightning: false, snow: false, cloudBase: 1500, windSpeed: 6 }],
     ["Overcast", { clouds: 0.92, precipitation: 0, visibility: 22000, lightning: false, snow: false, cloudBase: 1100, windSpeed: 7 }],
-    ["Rain", { clouds: 0.96, precipitation: 0.6, visibility: 40000, lightning: false, snow: false, cloudBase: 800, windSpeed: 9 }],
+    ["Rain", { clouds: 0.96, precipitation: 0.6, visibility: 12000, lightning: false, snow: false, cloudBase: 800, windSpeed: 9 }],
     ["Thunderstorm", { clouds: 1, precipitation: 1, visibility: 9000, lightning: true, snow: false, cloudBase: 700, windSpeed: 15 }],
     ["Snow", { clouds: 0.9, precipitation: 0.65, visibility: 8000, lightning: false, snow: true, cloudBase: 900, windSpeed: 5 }],
     ["Fog", { clouds: 0.6, precipitation: 0, visibility: 450, lightning: false, snow: false, cloudBase: 400, windSpeed: 1 }],
@@ -306,7 +306,7 @@
       slider("Precipitation", weather.precipitation, 0, 1, 0.01, (v) => (v < 0.02 ? "none" : `${Math.round(v * 100)} %`), (v) => sendWeather({ precipitation: v })),
       toggle("Snow instead of rain", weather.snow, (v) => sendWeather({ snow: v })),
       toggle("Lightning (in heavy cloud)", weather.lightning, (v) => sendWeather({ lightning: v })),
-      slider("Visibility", Math.log10(weather.visibility), 2.3, 4.6, 0.01, (v) => (10 ** v >= 39000 ? "unlimited" : `${(10 ** v / 1000).toFixed(1)} km`), (v) => sendWeather({ visibility: 10 ** v })),
+      slider("Visibility", Math.log10(weather.visibility), 2.3, 5.0, 0.01, (v) => `${(10 ** v / 1000).toFixed(1)} km`, (v) => sendWeather({ visibility: 10 ** v })),
     );
     b.append(el(`<h3>Wind</h3>`));
     b.append(

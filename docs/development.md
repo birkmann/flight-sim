@@ -165,3 +165,38 @@ for model previews; it does not overwrite the active `aviation/` artwork.
 a clear airliner windshield without the unused head-up combiner assembly, and retained
 physical display surfaces. The C172's VSI now distinguishes signed climb/descent and
 its panel includes live warning, autopilot and gear lamps.
+
+## Flight graphics
+
+The existing terrain streaming defaults, 512 MB budget and adaptive coarsening
+are retained. Ultra detail is available in Options; the capture script selects it.
+
+The weather camera enables HDR, filmic tonemapping, dithering, restrained
+energy-conserving bloom and a small midtone contrast adjustment. Sun colour,
+intensity and smoothly adapting exposure follow solar elevation and cloud cover.
+Cascaded sun shadows add depth to the aircraft; the photogrammetry remains unlit
+because its photographs already contain illumination and shadows.
+
+`clouds.wgsl` integrates a procedural 3D density field in 36 bounded steps with
+three sunward density samples for self-shadowing. An opaque depth prepass clips
+cloud integration against aircraft and terrain, including when the camera is
+inside the layer. Wind moves the field; floating-origin offsets keep it stable.
+The volume has a finite range and no temporal reconstruction or terrain cloud
+shadow map. This is an affordable approximation, not a meteorological model.
+
+Visibility now uses its actual distance continuously, including at 40 km. Clear
+and few-cloud presets allow longer visibility; rain uses 12 km. Input patches
+are bounded before reaching the renderer. Rain streaks use a maximum 1/120 s
+shutter and lower opacity; lens highlights read the current daylight value.
+
+Validation commands:
+
+```sh
+npm run check:rust
+cargo test --manifest-path bevy/Cargo.toml --locked --features bevy/x11 weather::tests
+npm test
+HEADLESS=0 CHECK_WEATHER=1 npm run capture:flights
+```
+
+The X11 feature is needed only for native Linux tests, not the browser build.
+See [capture provenance](screenshots/README.md#in-game-flights) for browser options.

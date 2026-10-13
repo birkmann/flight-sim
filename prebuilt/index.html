@@ -7,8 +7,8 @@
     <link rel="icon" type="image/svg+xml" href="assets/ui/brand.svg" />
     
 <script type="module">
-import init, * as bindings from '/flight_sim-9d47594afef70296.js';
-const wasm = await init({ module_or_path: '/flight_sim-9d47594afef70296_bg.wasm' });
+import init, * as bindings from '/flight_sim-734e72333c6f558d.js';
+const wasm = await init({ module_or_path: '/flight_sim-734e72333c6f558d_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -204,7 +204,7 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     <script src="place.js"></script>
     <link rel="stylesheet" href="deck.css" />
     <script src="deck.js"></script>
-  <link rel="modulepreload" href="/flight_sim-9d47594afef70296.js" crossorigin="anonymous" integrity="sha384-2Vq6BvY5wQiLVPFemGGMcAS91dVSmcmndDz6lOL2gxfZNqgEAEMMIEti10BQKoTt"><link rel="preload" href="/flight_sim-9d47594afef70296_bg.wasm" crossorigin="anonymous" integrity="sha384-/h6Pdn2OyBKoYxpPrhvhTh9yCMqpn8vs5qIP0tdVj636KBjUnEZnWc5R6cXSB877" as="fetch" type="application/wasm"></head>
+  <link rel="modulepreload" href="/flight_sim-734e72333c6f558d.js" crossorigin="anonymous" integrity="sha384-/44SYvQ7fmBD/N7EUkYK9uBwrVyAEROR2moN8HCBaLpeeeB1m8Ds2RydFJVtP0c9"><link rel="preload" href="/flight_sim-734e72333c6f558d_bg.wasm" crossorigin="anonymous" integrity="sha384-zvLg/8E+MLmVWQR2r9V66cOp4ASwFe9k8DrhjBQNTgX6GcyvtmoIE2UjpUGF73GN" as="fetch" type="application/wasm"></head>
   <body>
     <canvas id="canvas"></canvas>
     <div id="footer"><span id="credits"></span><span id="attribution"></span></div>

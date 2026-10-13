@@ -1,75 +1,95 @@
-// The sandbox's cloud layer (src/weather.rs): fractal value noise in world coordinates, thresholded by the cover,
-// darker where it is thick, faded out toward the sheet's edge.
+// World-space cumulus volume. Bounded front-to-back integration, clipped at
+// opaque scene depth. Stable spatial jitter avoids animated grain when paused.
 #import bevy_pbr::forward_io::VertexOutput
 #import bevy_pbr::mesh_view_bindings::view
+#import bevy_pbr::prepass_utils::prepass_depth
+#import bevy_pbr::view_transformations::position_ndc_to_world
 
 struct Cloud {
-    // Coverage 0..1, darkness 0..1, the layer's base (m, world), opacity.
-    params: vec4<f32>,
-    // Wind drift (m), then the world frame's offset from the start frame (m).
-    offset: vec4<f32>,
+    params: vec4<f32>, // cover, storm, base, opacity
+    offset: vec4<f32>, // wind drift, rebased world offset
     lit: vec4<f32>,
     shade: vec4<f32>,
-    // The haze far cloud fades into, and how much.
-    haze: vec4<f32>,
+    haze: vec4<f32>, // RGB, visibility in metres
+    sun: vec4<f32>, // direction, layer thickness
 }
-
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> cloud: Cloud;
 
-fn hash(p: vec2<f32>) -> f32 {
-    let q = fract(p * vec2<f32>(123.34, 456.21));
-    let r = q + dot(q, q + 45.32);
-    return fract(r.x * r.y);
+fn hash(p: vec3<f32>) -> f32 {
+    var q = fract(p * 0.1031);
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
 }
-
-fn noise(p: vec2<f32>) -> f32 {
+fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
-    let a = hash(i);
-    let b = hash(i + vec2<f32>(1.0, 0.0));
-    let c = hash(i + vec2<f32>(0.0, 1.0));
-    let d = hash(i + vec2<f32>(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    return mix(mix(mix(hash(i), hash(i + vec3(1.,0.,0.)), u.x),
+                   mix(hash(i + vec3(0.,1.,0.)), hash(i + vec3(1.,1.,0.)), u.x), u.y),
+               mix(mix(hash(i + vec3(0.,0.,1.)), hash(i + vec3(1.,0.,1.)), u.x),
+                   mix(hash(i + vec3(0.,1.,1.)), hash(i + vec3(1.,1.,1.)), u.x), u.y), u.z);
 }
-
-fn fbm(p0: vec2<f32>) -> f32 {
-    var p = p0;
-    var sum = 0.0;
-    var amp = 0.5;
-    for (var i = 0; i < 6; i = i + 1) {
-        sum = sum + amp * noise(p);
-        p = mat2x2<f32>(1.6, 1.2, -1.2, 1.6) * p;
-        amp = amp * 0.5;
-    }
-    return sum;
+fn density(pos: vec3<f32>) -> f32 {
+    let h = (pos.y - cloud.params.z) / cloud.sun.w;
+    if h <= 0.0 || h >= 1.0 { return 0.0; }
+    let world = vec3(pos.x + cloud.offset.z - cloud.offset.x, pos.y,
+                     pos.z + cloud.offset.w - cloud.offset.y);
+    let p = world / vec3(2300.0, 1500.0, 2300.0);
+    let shape = noise(p) * 0.625 + noise(p * 2.03 + 19.1) * 0.25 + noise(p * 4.07) * 0.125;
+    // Broad connected bases and eroded, rounded tops; coverage changes the
+    // occupied volume, not the opacity of a uniform grey sheet.
+    let profile = smoothstep(0.0, 0.12, h) * (1.0 - smoothstep(0.42, 1.0, h));
+    let threshold = 0.70 - cloud.params.x * 0.58;
+    let body = smoothstep(threshold, threshold + 0.14, shape * profile);
+    let erosion = noise(p * 9.0 + 7.0) * 0.22 * (1.0 - body);
+    return max(0.0, body - erosion) * (0.75 + cloud.params.y * 0.65);
 }
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    let world = in.world_position.xz + cloud.offset.zw - cloud.offset.xy;
-    let p = world / 2600.0;
-    // Large shapes, their billows, and fine wisps.
-    let base = fbm(p);
-    let billow = fbm(p * 3.1 + vec2<f32>(17.3, -4.1));
-    let d = base * 0.72 + billow * 0.28;
-    let cover = cloud.params.x;
-    let near = smoothstep(1.0 - cover * 0.95 - 0.03, 1.0 - cover * 0.95 + 0.12, d);
-    // Far away the noise would shimmer at grazing angles: blend to the cover's average instead.
-    let dist = length(in.world_position.xz - view.world_position.xz);
-    let far = smoothstep(6000.0, 40000.0, dist);
-    let density = mix(near, smoothstep(0.1, 0.95, cover), far);
-    // Thicker cloud is darker; heavy cover and rain darken it further.
-    let thickness = smoothstep(0.35, 1.0, density);
-    // Seen from below it is the grey base, from above the sunlit top; thin edges catch the light either way. Which
-    // one is the camera's side of the layer: far off the sheet curves down with the Earth below eye level, and is
-    // still its base.
-    // Blended over the cloud's depth, not switched: at the base the camera sits on the sheet and a switch flickers.
-    let from_below = smoothstep(-40.0, 40.0, cloud.params.z - view.world_position.y);
-    let base_shade = mix(0.3, 0.75, from_below);
-    let lit = mix(cloud.lit.rgb, cloud.shade.rgb, clamp(thickness * base_shade + cloud.params.y * 0.65, 0.0, 1.0));
-    let color = mix(lit, cloud.haze.rgb, smoothstep(4000.0, 60000.0, dist) * cloud.haze.a);
-    // Fade out only at the sheet's edge (it follows the camera, 250 km out).
-    let fade = 1.0 - smoothstep(190000.0, 248000.0, dist);
-    return vec4<f32>(color, density * fade * cloud.params.w);
+    let eye = view.world_position;
+    let ray = normalize(in.world_position.xyz - eye);
+    // Avoid division by zero for a precisely level camera.
+    let ry = select(-max(abs(ray.y), 0.0001), max(abs(ray.y), 0.0001), ray.y >= 0.0);
+    let b = (cloud.params.z - eye.y) / ry;
+    let t = (cloud.params.z + cloud.sun.w - eye.y) / ry;
+    let entry = max(0.0, min(b, t));
+    var end = min(60000.0, max(b, t));
+    let depth = prepass_depth(in.position, 0u);
+    if depth > 0.0 {
+        let uv = (in.position.xy - view.viewport.xy) / view.viewport.zw;
+        let ndc = vec3(uv * vec2(2.0, -2.0) + vec2(-1.0, 1.0), depth);
+        let scene = position_ndc_to_world(ndc);
+        end = min(end, length(scene - eye));
+    }
+    if end <= entry { return vec4(0.0); }
+    let step_size = (end - entry) / 36.0;
+    let jitter = hash(vec3(floor(in.position.xy), 0.0));
+    var transmittance = 1.0;
+    var radiance = vec3(0.0);
+    let silver = pow(max(dot(ray, cloud.sun.xyz), 0.0), 12.0) * 0.65;
+    for (var i = 0u; i < 36u; i++) {
+        let distance = entry + (f32(i) + jitter) * step_size;
+        let pos = eye + ray * distance;
+        let d = density(pos);
+        if d > 0.005 {
+            // Three sunward samples approximate self-shadowing inside billows.
+            let optical = density(pos + cloud.sun.xyz * 180.0) * 0.55
+                        + density(pos + cloud.sun.xyz * 420.0) * 0.8
+                        + density(pos + cloud.sun.xyz * 850.0) * 1.1;
+            let sunlight = exp(-optical * 1.7);
+            let height = clamp((pos.y - cloud.params.z) / cloud.sun.w, 0.0, 1.0);
+            let lighting = clamp(0.18 + sunlight * 0.7 + height * 0.18, 0.0, 1.0);
+            var color = mix(cloud.shade.rgb * 0.72, cloud.lit.rgb, lighting);
+            color += cloud.lit.rgb * silver * sunlight * (1.0 - d * 0.5);
+            let haze = 1.0 - exp(-distance / max(cloud.haze.a, 100.0));
+            color = mix(color, cloud.haze.rgb, haze * 0.85);
+            let opacity = 1.0 - exp(-d * step_size * 0.0035);
+            radiance += transmittance * opacity * color;
+            transmittance *= 1.0 - opacity;
+            if transmittance < 0.015 { break; }
+        }
+    }
+    let alpha = 1.0 - transmittance;
+    return vec4(radiance / max(alpha, 0.001), alpha * cloud.params.w);
 }

@@ -173,7 +173,8 @@ fn setup(
     // Light for the vehicle models only: the tiles are unlit.
     // It lights the on-foot view's weapon too (render layer 1, `sandbox/infantry/viewmodel.rs`).
     commands.spawn((
-        DirectionalLight { illuminance: 9_000.0, ..default() },
+        DirectionalLight { illuminance: 9_000.0, shadow_maps_enabled: !spike.bench, ..default() },
+        bevy::light::CascadeShadowConfigBuilder { maximum_distance: 3000.0, ..default() }.build(),
         Transform::from_rotation(Quat::from_euler(EulerRot::YXZ, 0.6, -0.9, 0.0)),
         bevy::camera::visibility::RenderLayers::from_layers(&[0, 1]),
     ));

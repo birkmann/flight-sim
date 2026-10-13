@@ -31,3 +31,27 @@ node scripts/capture-readme.mjs https://flight-sim-eight.vercel.app/
 
 Set `CHROMIUM_PATH` to use an existing Chromium executable. The capture script updates only
 menu images; the cockpit preview is recorded separately using the actual model and instrument renderer.
+
+## In-game flights
+
+The `flights/` images are 1920 × 1080 browser captures made on 13 October 2026
+using the NVIDIA hardware WebGPU renderer. No scenery, aircraft, sky or lighting
+is composited or generated outside the game. The accompanying `manifest.json`
+records the simulated conditions, aircraft position and loaded terrain statistics.
+These are selected simulated weather conditions, not live observations.
+
+```sh
+npm start
+# In another terminal, using an installed Playwright Chromium:
+npm run capture:flights
+```
+
+Set `CHROMIUM_PATH` for another Chromium executable. On Linux, `HEADLESS=0` runs
+a visible browser with ANGLE OpenGL, which can expose a hardware WebGPU adapter
+when headless Chromium selects SwiftShader. Set `SHOT` to
+`san-francisco-afternoon`, `sydney-golden-hour`, or `alpine-clouds` for a single view.
+`CHECK_WEATHER=1` also exercises every preset, night, and camera positions below,
+inside and above a cloud bank; diagnostic images go to `/tmp/weather-*.png`.
+The script fails on rendering errors or missing terrain instead of saving a
+blank view as a gameplay screenshot. Press **F10** to hide overlays for manual
+captures; click the view, then right-drag to orbit and scroll to frame the aircraft.

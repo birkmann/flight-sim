@@ -9,7 +9,7 @@ bevy_3d_tiles = "=0.4.4"
 # The app/window/render stack the tiles crate does not pull, as in its own web viewer.
 # scene: glTF models as spawnable worlds; mesh_picking: ray casts against the tiles; png: the models' textures.
 # JPEG textures and model animation support.
-bevy = { version = "=0.19.0", default-features = false, features = ["default_app", "bevy_winit", "webgpu", "scene", "mesh_picking", "png", "jpeg", "gltf_animation"] }
+bevy = { version = "=0.19.0", default-features = false, features = ["default_app", "bevy_winit", "webgpu", "scene", "mesh_picking", "png", "jpeg", "gltf_animation", "bevy_post_process"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

@@ -76,7 +76,7 @@ const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH
   await page.screenshot({path:`/tmp/flight-start-aircraft-${viewport.width}.png`});
   await page.locator('.st-foot .primary').click();
   await page.getByRole('combobox',{name:'Weather',exact:true}).selectOption('Clear');
-  assert.match(await page.locator('.st-condition-metrics').innerText(),/40/);
+  assert.match(await page.locator('.st-condition-metrics').innerText(),/80 km/);
   await page.getByRole('combobox',{name:'Weather',exact:true}).selectOption('Fog');
   assert.match(await page.locator('.st-condition-metrics').innerText(),/0.5/);
   assert.match(await page.locator('.st-condition-note').innerText(),/Reduced visual/);

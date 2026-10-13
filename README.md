@@ -27,10 +27,21 @@ Explore a city, plan an airport-to-airport flight, or settle into the cockpit an
 - **Three civilian aircraft.** Light-aircraft sightseeing, unpowered gliding and passenger flights.
 - **Cockpits with depth.** Live 2D instruments mounted on 3D dashboards, moving controls, spinning propellers and flashing aircraft lights.
 - **Plan your flight.** Pick airports, runways, weather and time of day; begin airborne, on a runway or on final approach.
+- **Light and weather.** Volumetric clouds, aircraft shadows, atmospheric visibility, smooth exposure and subtle HDR bloom.
 - **Room for the view.** Peripheral chase-view gauges, an on-demand flight menu and an option to hide the overlays.
 - **Flight feedback.** Terrain, stall, descent and landing-gear alerts with optional warning sounds.
 
 ## Screenshots
+
+| San Francisco in flight | Sydney in evening light |
+| :--- | :--- |
+| [![C172 flying over San Francisco with volumetric clouds](docs/screenshots/flights/san-francisco-afternoon.jpg)](docs/screenshots/flights/san-francisco-afternoon.jpg) | [![C172 over Sydney with warm evening lighting](docs/screenshots/flights/sydney-golden-hour.jpg)](docs/screenshots/flights/sydney-golden-hour.jpg) |
+
+[![Sailplane over real Alpine terrain near Zermatt](docs/screenshots/flights/alpine-clouds.jpg)](docs/screenshots/flights/alpine-clouds.jpg)
+
+These are **actual in-game captures** with streamed terrain, the shipped aircraft, and
+in-game weather and post-processing. Provider attribution remains visible.
+
 
 | Choose how to fly | Find your aircraft |
 | :--- | :--- |
@@ -127,6 +138,7 @@ committed browser bundle. Run `npm run build` before publishing Rust or flight-d
 - Multiplayer on the public deployment still needs shared Redis storage configured.
 - The sailplane has no tow/winch launch or dedicated thermal lift model.
 - Terrain warnings depend on loaded scenery. Flight performance and navigation estimates are approximate.
+- Photogrammetry includes baked lighting; terrain cannot reproduce fully dynamic ground shadows, water reflections or changing seasons. Cloud lighting uses a bounded real-time approximation.
 - Automated UI and geometry checks complement hands-on testing in a hardware WebGPU browser.
 
 ## Credits

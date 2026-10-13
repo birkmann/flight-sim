@@ -1,24 +1,28 @@
 //! Sky and weather for the sandbox: Bevy's physically based atmosphere lit by the sun at its true position for the
-//! place, date and time; a procedural cloud layer (`assets/shaders/clouds.wgsl`); fog; wind; lightning. The
+//! place, date and time; a depth-clipped volumetric cloud bank (`assets/shaders/clouds.wgsl`); fog; wind; lightning. The
 //! photorealistic tiles are unlit photographs, so their brightness and tint follow the light here as well.
 //! Rain and snow fall in the scene and wet the lens (`precip`).
 //!
 //! Bad weather greys and softens the view but keeps it readable: the photographs dim a little under a heavy
 //! overcast, not by half, and the presets' visibility (`ui.js`) is what a pilot would still fly in.
 //!
-//! Seen from high up, the weather is below: the haze thins out and the cloud sheet fades between the lower
+//! Seen from high up, the weather is below: the haze thins out and the cloud volume fades between the lower
 //! stratosphere and 30 km, and above `RAYMARCH_ABOVE` the atmosphere is raymarched, the mode Bevy provides for views
 //! from orbit (its lookup tables assume a camera inside the air, and from above it they tinted the ground brown).
 
-use bevy::camera::Exposure;
+use bevy::camera::{Exposure, Hdr};
+use bevy::core_pipeline::prepass::DepthPrepass;
+use bevy::core_pipeline::tonemapping::DebandDither;
+use bevy::post_process::bloom::Bloom;
+use bevy::render::view::{ColorGrading, ColorGradingGlobal, ColorGradingSection};
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::light::atmosphere::ScatteringMedium;
 use bevy::light::{Atmosphere, AtmosphereEnvironmentMapLight, light_consts::lux};
-use bevy::mesh::VertexAttributeValues;
-use bevy::pbr::{AtmosphereMode, AtmosphereSettings, DistanceFog, ExtractedAtmosphere, FogFalloff, GpuAtmosphereSettings};
+use bevy::mesh::MeshVertexBufferLayoutRef;
+use bevy::pbr::{AtmosphereMode, AtmosphereSettings, DistanceFog, ExtractedAtmosphere, FogFalloff, GpuAtmosphereSettings, MaterialPipeline, MaterialPipelineKey};
 use bevy::prelude::*;
 use bevy::render::extract_component::DynamicUniformIndex;
-use bevy::render::render_resource::{AsBindGroup, ShaderType};
+use bevy::render::render_resource::{AsBindGroup, ShaderType, RenderPipelineDescriptor, SpecializedMeshPipelineError, CompareFunction, Face};
 use bevy::render::{Render, RenderApp, RenderSystems};
 use bevy::shader::ShaderRef;
 use bevy_3d_tiles::{TileGeometry, Tiles3dCamera};
@@ -38,15 +42,9 @@ fn above_weather(altitude: f32) -> f32 {
     smoothstep(2_000.0, 25_000.0, altitude)
 }
 
-/// How far the camera is inside the cloud: the layer is drawn as a thin sheet, so within this much of its base it
-/// fades out and the fog closes in instead, rather than cutting the view in two along the horizon.
-const IN_CLOUD: f32 = 60.0;
-
-fn in_cloud(weather: &Weather, cam_y: f32) -> f32 {
-    if !weather.cloud_layer {
-        return 0.0;
-    }
-    (1.0 - smoothstep(0.0, IN_CLOUD, (cam_y - weather.cloud_base).abs())) * weather.clouds
+/// Physical depth of the cloud bank, from fair-weather cumulus to rain-bearing cloud.
+fn cloud_depth(weather: &Weather) -> f32 {
+    650.0 + 1400.0 * weather.clouds + 1600.0 * weather.precipitation
 }
 
 impl Plugin for WeatherPlugin {
@@ -127,7 +125,17 @@ impl Weather {
                 cur.insert(k.clone(), v.clone());
             }
         }
-        if let Ok(next) = serde_json::from_value::<Weather>(current) {
+        if let Ok(mut next) = serde_json::from_value::<Weather>(current) {
+            // Live observations and saved settings share the same physical bounds.
+            next.hour = next.hour.rem_euclid(24.0);
+            next.day = next.day.clamp(1.0, 366.0);
+            next.clouds = next.clouds.clamp(0.0, 1.0);
+            next.precipitation = next.precipitation.clamp(0.0, 1.0);
+            next.cloud_base = next.cloud_base.clamp(100.0, 12_000.0);
+            next.visibility = next.visibility.clamp(100.0, 150_000.0);
+            next.wind_speed = next.wind_speed.clamp(0.0, 100.0);
+            next.wind_from = next.wind_from.rem_euclid(360.0);
+            next.time_rate = next.time_rate.clamp(0.0, 3600.0);
             *self = next;
         }
     }
@@ -189,7 +197,7 @@ pub struct Sky {
     pub daylight: f32,
     /// Lightning flash, decaying from 1.
     pub flash: f32,
-    /// The cloud sheet is hidden while the command view looks down through it (set by the sandbox).
+    /// The cloud volume is hidden while the command view looks down through it (set by the sandbox).
     pub hide_cloud_layer: bool,
     next_flash: f32,
     seed: u32,
@@ -225,6 +233,8 @@ pub struct CloudUniform {
     pub shade: Vec4,
     /// The haze the far cloud fades into (the fog's colour), and how much.
     pub haze: Vec4,
+    /// Direction toward the sun and cloud depth in metres.
+    pub sun: Vec4,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Clone)]
@@ -240,6 +250,21 @@ impl Material for CloudMaterial {
     fn alpha_mode(&self) -> AlphaMode {
         AlphaMode::Blend
     }
+    fn specialize(
+        _pipeline: &MaterialPipeline,
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        _key: MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        // Render the inside of a camera-centred proxy. The shader clips its volume
+        // against scene depth, including mountains and the aircraft.
+        descriptor.primitive.cull_mode = Some(Face::Front);
+        if let Some(depth) = &mut descriptor.depth_stencil {
+            depth.depth_compare = Some(CompareFunction::Always);
+            depth.depth_write_enabled = Some(false);
+        }
+        Ok(())
+    }
 }
 
 fn setup(
@@ -254,34 +279,31 @@ fn setup(
     commands.spawn((Air, Atmosphere::earth(sky.medium.clone())));
     commands.entity(*camera).insert((
         AtmosphereSettings::default(),
+        Hdr,
+        DepthPrepass,
+        DebandDither::Enabled,
+        Bloom { intensity: 0.035, low_frequency_boost: 0.15, ..Bloom::NATURAL },
+        ColorGrading {
+            global: ColorGradingGlobal { post_saturation: 0.98, ..default() },
+            midtones: ColorGradingSection { contrast: 1.035, ..default() },
+            ..default()
+        },
         Exposure { ev100: 13.0 },
         Tonemapping::TonyMcMapface,
         AtmosphereEnvironmentMapLight::default(),
         DistanceFog { color: Color::srgb(0.7, 0.72, 0.76), falloff: FogFalloff::from_visibility(1.0e6), ..default() },
     ));
-    // The cloud layer: one sheet seen from below, one from above (built bent the other way, as it is turned over),
-    // following the camera.
     let material = materials.add(CloudMaterial { u: CloudUniform::default() });
-    for (flip, bend) in [(0.0, -1.0), (std::f32::consts::PI, 1.0)] {
-        let sheet = meshes.add(cloud_sheet(bend));
-        commands.spawn((CloudLayer, crate::sandbox::NoHit, Mesh3d(sheet), MeshMaterial3d(material.clone()), Transform::from_rotation(Quat::from_rotation_x(flip))));
-    }
+    commands.spawn((
+        CloudLayer, crate::sandbox::NoHit,
+        bevy::camera::visibility::NoFrustumCulling,
+        bevy::light::NotShadowCaster,
+        Mesh3d(meshes.add(Sphere::new(80_000.0).mesh().uv(32, 16))),
+        MeshMaterial3d(material.clone()), Transform::default(),
+    ));
     sky.cloud = Some(material);
     sky.seed = 0x2F6E_2B1D;
     sky.tint = Vec3::ONE;
-}
-
-/// The cloud sheet: 500 km across and curved down with the Earth (by d²/2R), so that from under an overcast it
-/// reaches the horizon all round. A flat one ended a fraction of a degree above it, over a strip of bare backdrop.
-fn cloud_sheet(bend: f32) -> Mesh {
-    const EARTH_RADIUS: f32 = 6_371_000.0;
-    let mut mesh = Plane3d::new(Vec3::Y, Vec2::splat(250_000.0)).mesh().subdivisions(96).build();
-    if let Some(VertexAttributeValues::Float32x3(points)) = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION) {
-        for p in points {
-            p[1] += bend * (p[0] * p[0] + p[2] * p[2]) / (2.0 * EARTH_RADIUS);
-        }
-    }
-    mesh
 }
 
 fn advance_clock(time: Res<Time>, mut weather: ResMut<Weather>, mut sky: ResMut<Sky>) {
@@ -318,10 +340,11 @@ fn smoothstep(a: f32, b: f32, x: f32) -> f32 {
 #[allow(clippy::too_many_arguments)]
 fn light_the_scene(
     weather: Res<Weather>,
+    time: Res<Time>,
     mut sky: ResMut<Sky>,
     frame: Res<Frame>,
     mut sun: Query<(&mut DirectionalLight, &mut Transform), Without<Tiles3dCamera>>,
-    mut cam: Single<(&Transform, &mut Exposure, &mut DistanceFog, &mut AtmosphereSettings), With<Tiles3dCamera>>,
+    mut cam: Single<(&Transform, &mut Exposure, &mut DistanceFog, &mut AtmosphereSettings, &mut AmbientLight), With<Tiles3dCamera>>,
     air: Query<Entity, With<Air>>,
     mut atmosphere: Query<&mut Visibility, With<CloudLayer>>,
     mut clear: ResMut<ClearColor>,
@@ -332,7 +355,9 @@ fn light_the_scene(
     sky.sun_elevation = elev;
     sky.sun_azimuth = az;
     let to_sun = Vec3::new(elev.cos() * az.sin(), elev.sin(), -elev.cos() * az.cos());
-    let overcast = weather.clouds.powf(1.5);
+    let cloud_top = weather.cloud_base + cloud_depth(&weather);
+    let clear_of_cloud = smoothstep(cloud_top - 150.0, cloud_top + 250.0, cam.0.translation.y);
+    let overcast = weather.clouds.powf(1.5) * (1.0 - clear_of_cloud);
     let day = smoothstep(-0.1, 0.2, elev);
     // Broken cloud dims the day as before; beyond that a full overcast and rain take off only a little more, since
     // the eye (and the camera) adapt to it.
@@ -341,8 +366,9 @@ fn light_the_scene(
     for (mut light, mut tf) in &mut sun {
         // Below the horizon the "sun" is the moon: a faint, cool light from high up.
         if elev > -0.05 {
-            light.illuminance = lux::RAW_SUNLIGHT * (1.0 - 0.7 * overcast) * (1.0 - 0.2 * weather.precipitation) + sky.flash * 40_000.0;
-            light.color = Color::WHITE;
+            light.illuminance = lux::RAW_SUNLIGHT * smoothstep(-0.05, 0.3, elev) * (1.0 - 0.94 * overcast) * (1.0 - 0.2 * weather.precipitation) + sky.flash * 40_000.0;
+            let warmth = 1.0 - smoothstep(0.0, 0.4, elev);
+            light.color = Color::srgb(1.0, 1.0 - 0.28 * warmth, 1.0 - 0.52 * warmth);
             *tf = Transform::IDENTITY.looking_to(-to_sun, Vec3::Y);
         } else {
             light.illuminance = 0.3 + sky.flash * 400.0;
@@ -350,7 +376,9 @@ fn light_the_scene(
             *tf = Transform::IDENTITY.looking_to(Vec3::new(0.3, -1.0, 0.2), Vec3::Y);
         }
     }
-    let (cam_tf, exposure, fog, settings) = &mut *cam;
+    let (cam_tf, exposure, fog, settings, ambient) = &mut *cam;
+    ambient.brightness = 80.0 + 650.0 * day * (0.5 + 0.5 * overcast);
+    ambient.color = Color::srgb(0.72, 0.81, 1.0);
     let altitude = frame.altitude(cam_tf.translation);
     let above = above_weather(altitude);
     // Exposure follows the light, as an eye (or an auto-exposure camera) does.
@@ -358,22 +386,24 @@ fn light_the_scene(
     // From high up the air's glow over the ground drowned the land and sea in blue: stopping down dims that glow (and
     // the sky) while the tiles, unlit photographs, keep their brightness.
     let thin_haze = 1.5 * smoothstep(5_000.0, 80_000.0, altitude);
-    exposure.ev100 = (7.5 + (ev_day - 7.5) * smoothstep(-0.2, 0.15, elev)) - sky.flash * 2.0 + thin_haze;
+    let low_sun_compensation = 0.9 * (1.0 - smoothstep(0.05, 0.5, elev)) * day;
+    let target_ev = 7.5 + (ev_day - 7.5) * smoothstep(-0.2, 0.15, elev) + thin_haze - low_sun_compensation;
+    exposure.ev100 += (target_ev - exposure.ev100) * (1.0 - (-time.delta_secs() * 2.0).exp());
     // Fog: visibility, in the colour of the overcast sky at this hour.
     let grey = 0.55 + 0.25 * weather.clouds;
     let brightness = 0.08 + 0.92 * sky.daylight.max(sky.flash);
     let haze = Vec3::new(grey, grey + 0.02, grey + 0.06) * brightness;
     // The fog is the low air's haze: looking down from high up there is little of it on the way, so it fades out.
     fog.color = Color::srgba(haze.x, haze.y, haze.z, 1.0 - above);
-    // Inside the cloud the fog closes in (eased in log space: from 1000 km a straight blend would stay clear until the
-    // last metres).
-    let clear_air = if weather.visibility >= 39_000.0 { 1.0e6 } else { weather.visibility.max(100.0) };
-    let inside = if sky.hide_cloud_layer { 0.0 } else { in_cloud(&weather, cam_tf.translation.y) };
-    fog.falloff = FogFalloff::from_visibility((clear_air.ln() + (80.0_f32.ln() - clear_air.ln()) * inside).exp());
+    // Visibility remains continuous: 40 km must not suddenly turn into 1000 km.
+    // Cloud extinction is integrated in the volume shader, including when flying inside it.
+    fog.falloff = FogFalloff::from_visibility(weather.visibility.clamp(100.0, 150_000.0));
+    fog.directional_light_color = Color::srgba(1.0, 0.86, 0.65, 0.18 * day * (1.0 - overcast));
+    fog.directional_light_exponent = 12.0;
     // Under a full overcast or in fog the sky is the cloud's grey all the way down: the physical sky (which fog
     // doesn't reach) would show its clear-air colours at the horizon. The backdrop takes the fog's colour instead,
     // until the view climbs out above the weather; toward space it darkens.
-    let overcast_sky = (weather.clouds > 0.85 || weather.visibility < 6000.0) && above < 0.5;
+    let overcast_sky = (weather.clouds > 0.85 || weather.visibility < 6000.0) && above < 0.5 && clear_of_cloud < 0.5;
     let want_atmosphere = weather.atmosphere && !overcast_sky;
     let space = smoothstep(30_000.0, 100_000.0, altitude);
     let backdrop = haze * (1.0 - space);
@@ -410,7 +440,7 @@ fn place_clouds(
     let wind = weather.wind();
     *drift += Vec2::new(wind.x, wind.z) * time.delta_secs();
     for mut tf in &mut layers {
-        tf.translation = Vec3::new(cam.translation.x, weather.cloud_base, cam.translation.z);
+        tf.translation = cam.translation;
     }
     let Some(handle) = &sky.cloud else { return };
     let Some(mut m) = materials.get_mut(handle) else { return };
@@ -424,15 +454,18 @@ fn place_clouds(
     let grey = 0.55 + 0.25 * weather.clouds;
     let brightness = 0.08 + 0.92 * sky.daylight.max(sky.flash);
     let haze = Vec3::new(grey, grey + 0.02, grey + 0.06) * brightness;
-    // The sheet is a thin shell 500 km wide: from high up it would lie over the ground as a milky veil, so it fades
-    // out on the way up.
-    let opacity = 0.95 * (1.0 - smoothstep(12_000.0, 25_000.0, frame.altitude(cam.translation))) * (1.0 - in_cloud(&weather, cam.translation.y));
+    // Fade the weather volume on the way into space.
+    let opacity = 0.95 * (1.0 - smoothstep(12_000.0, 25_000.0, frame.altitude(cam.translation)));
     m.u = CloudUniform {
         params: Vec4::new(weather.clouds, (weather.precipitation * 0.8 + (weather.clouds - 0.7).max(0.0)).min(1.0), weather.cloud_base, opacity),
         offset: Vec4::new(drift.x, drift.y, start.x as f32, start.z as f32),
         lit: (lit + flash).extend(1.0),
         shade: (shade + flash * 0.6).extend(1.0),
-        haze: haze.extend(0.5 + 0.5 * weather.clouds),
+        haze: haze.extend(weather.visibility.clamp(100.0, 150_000.0)),
+        sun: Vec4::new(
+            sky.sun_elevation.cos() * sky.sun_azimuth.sin(), sky.sun_elevation.sin(),
+            -sky.sun_elevation.cos() * sky.sun_azimuth.cos(), cloud_depth(&weather),
+        ),
     };
 }
 
@@ -462,5 +495,33 @@ fn tint_tiles(
                 m.base_color = c;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_weather_updates_preserve_conditions_and_bound_live_data() {
+        let mut w = Weather::default();
+        w.apply(&serde_json::json!({"clouds": 2.0, "visibility": -30.0, "hour": 25.0, "windFrom": -10.0}));
+        assert_eq!(w.clouds, 1.0);
+        assert_eq!(w.visibility, 100.0);
+        assert_eq!(w.hour, 1.0);
+        assert_eq!(w.wind_from, 350.0);
+        assert_eq!(w.cloud_base, 1800.0);
+        assert_eq!(w.precipitation, 0.0);
+        w.apply(&serde_json::json!({"clouds": "invalid"}));
+        assert_eq!(w.clouds, 1.0);
+    }
+
+    #[test]
+    fn storm_clouds_deepen_and_solar_light_tracks_the_day() {
+        let fair = Weather::default();
+        let storm = Weather { clouds: 1.0, precipitation: 1.0, ..default() };
+        assert!(cloud_depth(&storm) > cloud_depth(&fair) * 2.0);
+        assert!(sun_position(48.0, 180.0, 12.0).0 > 0.8);
+        assert!(sun_position(48.0, 180.0, 0.0).0 < 0.0);
     }
 }

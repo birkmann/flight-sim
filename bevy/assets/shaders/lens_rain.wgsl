@@ -194,7 +194,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let rim = smoothstep(0.45, 1.0, k);
     let top = 1.0 - smoothstep(-0.8, 0.2, q.y);
     inside *= 1.0 - (0.5 + 0.25 * top) * rim * rim;
-    let light = lens.b.z;
+    let light = lens.b.x;
     let spec = 1.0 - smoothstep(0.0, 0.3, length(q - vec2<f32>(-0.3, -0.45)));
     let caustic = (1.0 - smoothstep(0.0, 0.35, length(vec2<f32>(q.x * 0.6, q.y - 0.72)))) * (1.0 - rim * 0.5);
     inside += vec3<f32>(0.92, 0.96, 1.0) * (spec * 0.9 + caustic * 0.3) * (0.25 + 0.75 * light);

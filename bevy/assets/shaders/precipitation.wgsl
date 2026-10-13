@@ -76,7 +76,7 @@ fn vertex(v: Vertex) -> VertexOutput {
     }
     // Streaks cover how far the particle moves across the view while the frame is exposed.
     let a_view = (view.view_from_world * vec4<f32>(center, 1.0)).xyz;
-    let b_view = (view.view_from_world * vec4<f32>(center - velocity * precip.motion.w, 1.0)).xyz;
+    let b_view = (view.view_from_world * vec4<f32>(center - velocity * min(precip.motion.w, 1.0 / 120.0), 1.0)).xyz;
     let depth = -a_view.z;
     if (depth < 0.15 && -b_view.z < 0.15) {
         return hidden();
@@ -113,7 +113,7 @@ fn vertex(v: Vertex) -> VertexOutput {
     let near = smoothstep(select(0.2, 0.35, snow), select(0.6, 1.2, snow), depth);
     // Close flakes are a little out of focus: softer discs.
     let soft = select(0.55, mix(0.7, 0.3, smoothstep(0.5, 3.0, depth)), snow);
-    out.look = vec2<f32>(precip.color.a * cover * spread * edge * near, soft);
+    out.look = vec2<f32>(precip.color.a * cover * spread * edge * near * select(0.55, 1.0, snow), soft);
     return out;
 }
 

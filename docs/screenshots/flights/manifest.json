@@ -1,0 +1,458 @@
+[
+  {
+    "name": "san-francisco-afternoon",
+    "city": "sanfrancisco",
+    "aircraft": "c172",
+    "orbit": [
+      -300,
+      65
+    ],
+    "weather": {
+      "hour": 15.5,
+      "day": 180,
+      "clouds": 0.48,
+      "cloudBase": 1800,
+      "visibility": 65000
+    },
+    "capturedAt": "2026-10-13T05:22:18.303Z",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hud": {
+      "ab": false,
+      "agl": 264.88330078125,
+      "alpha": 3.00234317779541,
+      "alt": 265.513427734375,
+      "ammo": "",
+      "bank": 0.3818804621696472,
+      "base": {
+        "alt": 271.7799377441406,
+        "aspect": 1.7777777910232544,
+        "cam": [
+          -13.577836990356445,
+          -0.8635457158088684
+        ],
+        "combiner": null,
+        "contacts": [],
+        "flight": null,
+        "fov": 0.8726646304130554,
+        "fx": {
+          "daylight": 0.8940935730934143,
+          "flash": 0,
+          "weather": {
+            "atmosphere": true,
+            "cloudBase": 1800,
+            "cloudLayer": true,
+            "clouds": 0.47999998927116394,
+            "day": 180,
+            "hour": 15.5,
+            "lightning": false,
+            "precipitation": 0,
+            "snow": false,
+            "timeRate": 0,
+            "visibility": 65000,
+            "windFrom": 250,
+            "windSpeed": 2
+          }
+        },
+        "headLook": [
+          0.7500026226043701,
+          -0.16249997913837433
+        ],
+        "lat": 37.81235919683193,
+        "locked": true,
+        "lon": -122.42346194175333,
+        "message": "",
+        "station": false,
+        "travel": null,
+        "view": "chase"
+      },
+      "beta": 0.01767970435321331,
+      "collective": 0,
+      "depth": 0,
+      "erector": 0,
+      "fpm": [
+        1.1778727769851685,
+        0.4103895425796509
+      ],
+      "g": 1.0005420446395874,
+      "gear": false,
+      "gearWarning": false,
+      "gs": 63.94053649902344,
+      "gun": null,
+      "gunEl": 0,
+      "hasErector": false,
+      "hasGear": false,
+      "hasTurret": false,
+      "heading": 279.2905578613281,
+      "health": 1,
+      "hullHeading": 279.982666015625,
+      "ias": 64.86150360107422,
+      "id": "c172",
+      "ir": false,
+      "label": "C172",
+      "lat": 37.81229159625632,
+      "lift": 0,
+      "lon": -122.42361735529347,
+      "look": [
+        279.982666015625,
+        -6.87549352645874
+      ],
+      "mach": 0.1936407834291458,
+      "mode": "jet",
+      "muzzle": false,
+      "onGround": false,
+      "pitch": 1.639406681060791,
+      "pullUp": false,
+      "radar": [],
+      "range": null,
+      "reload": 0,
+      "rotor": 7.966179847717285,
+      "rounds": 0,
+      "rpm": 2129.99951171875,
+      "speed": 63.959625244140625,
+      "speedbrake": false,
+      "stall": false,
+      "steer": 0,
+      "surfaces": {
+        "flap": 0,
+        "pitch": -0.00018992375407833606,
+        "roll": -2.54792738019205e-8,
+        "yaw": -0.0015424183802679181
+      },
+      "tankSpeed": 0,
+      "target": null,
+      "tas": 65.69597625732422,
+      "terrainTti": null,
+      "throttle": 0.699999988079071,
+      "track": 280.16497802734375,
+      "turret": 0,
+      "vs": -1.5625149011611938,
+      "wing": null,
+      "zoom": 1
+    },
+    "terrain": {
+      "decodeMs": [
+        0.05104894800619646,
+        0.04615384340286255,
+        1.0391608047318626
+      ],
+      "falloffM": 2039.1546630859375,
+      "halted": false,
+      "pressure": 1,
+      "residentMB": 41.39241409301758,
+      "tiles": 4595,
+      "tilesPerS": 140.72032155771174,
+      "worstMs": 12.899999618530273
+    },
+    "gpu": {
+      "vendor": "nvidia",
+      "architecture": "pascal"
+    }
+  },
+  {
+    "name": "sydney-golden-hour",
+    "city": "sydney",
+    "aircraft": "c172",
+    "orbit": [
+      260,
+      65
+    ],
+    "weather": {
+      "hour": 17.8,
+      "day": 15,
+      "clouds": 0.35,
+      "cloudBase": 1700,
+      "visibility": 35000
+    },
+    "capturedAt": "2026-10-13T05:22:56.505Z",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hud": {
+      "ab": false,
+      "agl": 265.1073913574219,
+      "alpha": 2.9713375568389893,
+      "alt": 264.8806457519531,
+      "ammo": "",
+      "bank": 0.3724873661994934,
+      "base": {
+        "alt": 271.24993896484375,
+        "aspect": 1.7777777910232544,
+        "cam": [
+          -13.9985933303833,
+          1.2948284149169922
+        ],
+        "combiner": null,
+        "contacts": [],
+        "flight": null,
+        "fov": 0.8726646304130554,
+        "fx": {
+          "daylight": 0.9091524481773376,
+          "flash": 0,
+          "weather": {
+            "atmosphere": true,
+            "cloudBase": 1700,
+            "cloudLayer": true,
+            "clouds": 0.3499999940395355,
+            "day": 15,
+            "hour": 17.799999237060547,
+            "lightning": false,
+            "precipitation": 0,
+            "snow": false,
+            "timeRate": 0,
+            "visibility": 35000,
+            "windFrom": 250,
+            "windSpeed": 2
+          }
+        },
+        "headLook": [
+          -0.6500005722045898,
+          -0.16249997913837433
+        ],
+        "lat": -33.84499580755148,
+        "locked": true,
+        "lon": 151.25461346070028,
+        "message": "",
+        "station": false,
+        "travel": null,
+        "view": "chase"
+      },
+      "beta": 0.017206590622663498,
+      "collective": 0,
+      "depth": 0,
+      "erector": 0,
+      "fpm": [
+        -0.9318153262138367,
+        0.42677900195121765
+      ],
+      "g": 1.000522494316101,
+      "gear": false,
+      "gearWarning": false,
+      "gs": 64.01583099365234,
+      "gun": null,
+      "gunEl": 0,
+      "hasErector": false,
+      "hasGear": false,
+      "hasTurret": false,
+      "heading": 250.1707000732422,
+      "health": 1,
+      "hullHeading": 250.02584838867188,
+      "ias": 65.19835662841797,
+      "id": "c172",
+      "ir": false,
+      "label": "C172",
+      "lat": -33.84496450451244,
+      "lift": 0,
+      "lon": 151.25444835551696,
+      "look": [
+        250.02584838867188,
+        -6.87549352645874
+      ],
+      "mach": 0.19463923573493958,
+      "mode": "jet",
+      "muzzle": false,
+      "onGround": false,
+      "pitch": 1.5851093530654907,
+      "pullUp": false,
+      "radar": [],
+      "range": null,
+      "reload": 0,
+      "rotor": 7.966179847717285,
+      "rounds": 0,
+      "rpm": 2129.99951171875,
+      "speed": 64.03575897216797,
+      "speedbrake": false,
+      "stall": false,
+      "steer": 0,
+      "surfaces": {
+        "flap": 0,
+        "pitch": -0.0001870420528575778,
+        "roll": -8.967177222984901e-9,
+        "yaw": -0.0015018603298813105
+      },
+      "tankSpeed": 0,
+      "target": null,
+      "tas": 66.03514862060547,
+      "terrainTti": null,
+      "throttle": 0.699999988079071,
+      "track": 250.17385864257812,
+      "turret": 0,
+      "vs": -1.5974222421646118,
+      "wing": null,
+      "zoom": 1
+    },
+    "terrain": {
+      "decodeMs": [
+        0.05503875640935676,
+        0.0441860438779343,
+        1.8620154866876528
+      ],
+      "falloffM": 2082.44970703125,
+      "halted": false,
+      "pressure": 1,
+      "residentMB": 38.7119255065918,
+      "tiles": 4699,
+      "tilesPerS": 127.25658373485277,
+      "worstMs": 17.5
+    },
+    "gpu": {
+      "vendor": "nvidia",
+      "architecture": "pascal"
+    }
+  },
+  {
+    "name": "alpine-clouds",
+    "city": "matterhorn",
+    "aircraft": "glider",
+    "orbit": [
+      -220,
+      45
+    ],
+    "weather": {
+      "hour": 10,
+      "day": 180,
+      "clouds": 0.58,
+      "cloudBase": 4800,
+      "visibility": 80000
+    },
+    "capturedAt": "2026-10-13T05:23:32.705Z",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hud": {
+      "ab": false,
+      "agl": 1135.24169921875,
+      "alpha": 4.575618743896484,
+      "alt": 3596.478271484375,
+      "ammo": "",
+      "bank": 0.31176114082336426,
+      "base": {
+        "alt": 3600.821533203125,
+        "aspect": 1.7777777910232544,
+        "cam": [
+          -12.43949031829834,
+          0.5408056974411011
+        ],
+        "combiner": null,
+        "contacts": [],
+        "flight": null,
+        "fov": 0.8726646304130554,
+        "fx": {
+          "daylight": 0.8809942007064819,
+          "flash": 0,
+          "weather": {
+            "atmosphere": true,
+            "cloudBase": 4800,
+            "cloudLayer": true,
+            "clouds": 0.5799999833106995,
+            "day": 180,
+            "hour": 10,
+            "lightning": false,
+            "precipitation": 0,
+            "snow": false,
+            "timeRate": 0,
+            "visibility": 80000,
+            "windFrom": 250,
+            "windSpeed": 2
+          }
+        },
+        "headLook": [
+          0.5499982833862305,
+          -0.11250000447034836
+        ],
+        "lat": 46.02951475516396,
+        "locked": true,
+        "lon": 7.735200616148302,
+        "message": "",
+        "station": false,
+        "travel": null,
+        "view": "chase"
+      },
+      "beta": 0.023741863667964935,
+      "collective": 0,
+      "depth": 0,
+      "erector": 0,
+      "fpm": [
+        0.7085366249084473,
+        0.24736349284648895
+      ],
+      "g": 1.0002166032791138,
+      "gear": false,
+      "gearWarning": false,
+      "gs": 39.01332473754883,
+      "gun": null,
+      "gunEl": 0,
+      "hasErector": false,
+      "hasGear": true,
+      "hasTurret": false,
+      "heading": 226.4890899658203,
+      "health": 1,
+      "hullHeading": 224.9654998779297,
+      "ias": 34.2452392578125,
+      "id": "glider",
+      "ir": false,
+      "label": "SAILPLANE",
+      "lat": 46.029401319536916,
+      "lift": 0,
+      "lon": 7.735152276632074,
+      "look": [
+        224.9654998779297,
+        -6.87549352645874
+      ],
+      "mach": 0.12569132447242737,
+      "mode": "jet",
+      "muzzle": false,
+      "onGround": false,
+      "pitch": -0.5142825245857239,
+      "pullUp": false,
+      "radar": [],
+      "range": null,
+      "reload": 0,
+      "rotor": 2.2142856121063232,
+      "rounds": 0,
+      "rpm": 592.056396484375,
+      "speed": 39.1825065612793,
+      "speedbrake": false,
+      "stall": false,
+      "steer": 0,
+      "surfaces": {
+        "flap": 0,
+        "pitch": -0.0015780931571498513,
+        "roll": -2.588649294921197e-8,
+        "yaw": -0.002068369882181287
+      },
+      "tankSpeed": 0,
+      "target": null,
+      "tas": 41.00076675415039,
+      "terrainTti": null,
+      "throttle": 0.699999988079071,
+      "track": 225.31605529785156,
+      "turret": 0,
+      "vs": -3.637233257293701,
+      "wing": null,
+      "zoom": 1
+    },
+    "terrain": {
+      "decodeMs": [
+        0.06666666269302368,
+        0.0416666641831398,
+        1.3833333154519398
+      ],
+      "falloffM": 3637.02978515625,
+      "halted": false,
+      "pressure": 1,
+      "residentMB": 67.77809524536133,
+      "tiles": 1936,
+      "tilesPerS": 11.758942332605267,
+      "worstMs": 7.699999809265137
+    },
+    "gpu": {
+      "vendor": "nvidia",
+      "architecture": "pascal"
+    }
+  }
+]
