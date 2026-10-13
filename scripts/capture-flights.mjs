@@ -5,6 +5,16 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 const origin = process.argv[2] || 'http://127.0.0.1:5197/';
 const directory = fileURLToPath(new URL('../docs/screenshots/flights/', import.meta.url));
+const airportData = JSON.parse(await readFile(new URL('../bevy/assets/data/airports.json', import.meta.url), 'utf8'));
+function runwayAt(icao) {
+ const airport = airportData.airports.find(a => a[0] === icao);
+ if (!airport) throw new Error(`Unknown airport: ${icao}`);
+ const r = airport[9].find(r => r[4] && r[2] > 8000);
+ if (!r) throw new Error(`No suitable runway at ${icao}`);
+ return {icao, name:airport[2], width_ft:r[3],
+  a:{ident:r[0],lat:r[6],lon:r[7],elev_ft:r[8],disp_ft:r[10]},
+  b:{ident:r[1],lat:r[11],lon:r[12],elev_ft:r[13],disp_ft:r[15]}};
+}
 await mkdir(directory, { recursive: true });
 const browser = await chromium.launch({
  headless: process.env.HEADLESS !== '0',
@@ -15,15 +25,22 @@ const shots = [
  {name:'san-francisco-afternoon', city:'sanfrancisco', aircraft:'c172', orbit:[-300,65], weather:{hour:15.5,day:180,clouds:0.48,cloudBase:1800,visibility:65000}},
  {name:'sydney-golden-hour', city:'sydney', aircraft:'c172', orbit:[260,65], weather:{hour:17.8,day:15,clouds:0.35,cloudBase:1700,visibility:35000}},
  {name:'alpine-clouds', city:'matterhorn', aircraft:'glider', orbit:[-220,45], weather:{hour:10,day:180,clouds:0.58,cloudBase:4800,visibility:80000}},
+ {name:'berlin-tiergarten', city:'berlin', aircraft:'c172', fov:60, detail:1.4, settleMs:12000, orbit:[-250,85], weather:{hour:16,day:180,clouds:0.2,cloudBase:2200,visibility:60000}},
+ {name:'berlin-c172-cockpit', city:'berlin', aircraft:'c172', view:'cockpit', fov:75, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
+ {name:'berlin-airliner', city:'berlin', aircraft:'airliner', fov:60, settleMs:12000, orbit:[-260,70], weather:{hour:17,day:180,clouds:0.25,cloudBase:2200,visibility:60000}},
+ {name:'berlin-airliner-cockpit', city:'berlin', aircraft:'airliner', view:'cockpit', fov:80, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
+ {name:'berlin-brandenburg-runway', city:'berlin', aircraft:'airliner', airport:'EDDB', orbit:[-330,45], weather:{hour:16,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
 ];
+const selectedNames = process.env.SHOT?.split(',');
+if (selectedNames?.some(name => !shots.some(s => s.name === name))) throw new Error(`Unknown SHOT: ${process.env.SHOT}`);
 const manifest = process.env.SHOT ? JSON.parse(await readFile(`${directory}/manifest.json`, 'utf8').catch(() => '[]')) : [];
 try {
- for (const shot of shots.filter(s => !process.env.SHOT || s.name === process.env.SHOT)) {
+ for (const shot of shots.filter(s => !selectedNames || selectedNames.includes(s.name))) {
   const page = await browser.newPage({ viewport: {width:1920,height:1080}, deviceScaleFactor:1 });
   const errors=[];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => {if(m.type()==='error' || /%cERROR|panicked|DeviceLost/.test(m.text())) { const text=m.text().replace(/key=[^&\s]+/g,'key=REDACTED'); errors.push(text); console.error(text.slice(0,3000)); }});
-  await page.addInitScript(({city,aircraft,weather})=>{
+  await page.addInitScript(({city,aircraft,weather,fov=50,detail=0.7})=>{
    const requestAdapter = navigator.gpu?.requestAdapter.bind(navigator.gpu);
    if (requestAdapter) navigator.gpu.requestAdapter = async (...args) => {
     const adapter = await requestAdapter(...args);
@@ -32,7 +49,7 @@ try {
    };
    localStorage.setItem('flight-simulator.start',JSON.stringify({city,mode:'vehicle',asset:aircraft}));
    localStorage.setItem('sandbox.weather',JSON.stringify({...weather,precipitation:0,lightning:false,snow:false,timeRate:0,windSpeed:2,atmosphere:true,cloudLayer:true}));
-   localStorage.setItem('sandbox.options',JSON.stringify({fov:50,detail:0.7}));
+   localStorage.setItem('sandbox.options',JSON.stringify({fov,detail}));
   },shot);
   console.log('Loading',shot.name);
   await page.goto(origin, {waitUntil:'domcontentloaded'});
@@ -41,25 +58,56 @@ try {
    await page.waitForFunction(()=>window.__hudState?.base && !window.__hudState.base.travel, null, {timeout:120000});
    await page.waitForTimeout(5000);
    console.log('Renderer ready');
-   await page.locator('.st-steps [data-step="brief"]').click();
-   await page.locator('.st-btn.launch').click();
+   if (shot.airport) {
+    const dep = runwayAt(shot.airport);
+    await page.evaluate(({aircraft,dep}) => {
+     dispatchEvent(new Event('sim:start-hide'));
+     window.__cmds.push(JSON.stringify({type:'flight',aircraft,dep,start:'runway',assist:false,guide:false}));
+    },{aircraft:shot.aircraft,dep});
+   } else {
+    await page.locator('.st-steps [data-step="brief"]').click();
+    await page.locator('.st-btn.launch').click();
+   }
    await page.waitForFunction(()=>window.__hudState?.mode !== 'free' && window.__hudState?.label, null, {timeout:90000});
    console.log('Aircraft spawned');
    await page.waitForFunction(()=>window.__tileStats?.tiles > 30 && window.__tileStats?.residentMB > 10, null, {timeout:120000});
    await page.waitForTimeout(15000);
+   await page.evaluate(view => window.__cmds.push(JSON.stringify({type:'view',view})), shot.view || 'chase');
    await page.keyboard.press('F10');
    await page.bringToFront();
    await page.locator('#canvas').click({position:{x:960,y:540}});
    await page.waitForFunction(()=>window.__hudState?.base?.locked);
-   await page.mouse.move(980,520);
-   await page.mouse.down({button:'right'});
-   await page.mouse.move(980 + shot.orbit[0],520 + shot.orbit[1],{steps:30});
-   await page.mouse.up({button:'right'});
+   if (shot.orbit) {
+    await page.mouse.down({button:'right'});
+    await page.waitForTimeout(100);
+    // Relative pointer events avoid OS pointer recentering corrupting a scripted drag.
+    // These go through the same input handler as an ordinary right-drag.
+    await page.evaluate(() => {
+     window.__cmds.push(JSON.stringify({type:'view',view:'chase'}));
+    });
+    await page.waitForTimeout(200);
+    await page.evaluate(([movementX,movementY]) => {
+     const event = new PointerEvent('pointermove', {
+      bubbles:true, pointerId:1, pointerType:'mouse', isPrimary:true, button:-1, buttons:2,
+      movementX,movementY,
+     });
+     event.getCoalescedEvents = () => [event];
+     document.querySelector('#canvas').dispatchEvent(event);
+    }, shot.orbit);
+    await page.waitForTimeout(200);
+    await page.mouse.up({button:'right'});
+    await page.waitForFunction(orbit => {
+     const actual = window.__hudState?.base?.headLook;
+     return actual && actual.every((v,i) => Math.abs(v + orbit[i] * 0.0025) < 0.03);
+    }, shot.orbit, {timeout:5000});
+   }
 
-   await page.waitForTimeout(3000);
+   await page.waitForTimeout(shot.settleMs || 3000);
    if(errors.length) throw new Error(errors.join('\n').slice(0,10000));
    const state=await page.evaluate(()=>({hud:window.__hudState,terrain:window.__tileStats,gpu:window.__captureGpu}));
-   if(state.hud.alt < 50 || state.hud.base.alt < 50 || state.terrain.residentMB < 10 || state.hud.mode === 'free') throw new Error('Flight or terrain did not remain capture-ready');
+   if(state.terrain.residentMB < 10 || state.hud.mode === 'free') throw new Error('Flight or terrain did not remain capture-ready');
+   if (shot.airport ? !state.hud.onGround : state.hud.alt < 50 || state.hud.base.alt < 50) throw new Error('Aircraft is not at the intended runway or flight altitude');
+   if (state.hud.base.view !== (shot.view || 'chase')) throw new Error('Camera did not reach the requested view');
    await page.screenshot({path:`${directory}/${shot.name}.jpg`,type:'jpeg',quality:94});
    const previous = manifest.findIndex(item => item.name === shot.name);
    if (previous >= 0) manifest.splice(previous, 1);

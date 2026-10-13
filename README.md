@@ -33,11 +33,23 @@ Explore a city, plan an airport-to-airport flight, or settle into the cockpit an
 
 ## Screenshots
 
+| Over Berlin's Tiergarten | Airliner over Berlin |
+| :--- | :--- |
+| [![C172 flying over Berlin's Tiergarten and city skyline](docs/screenshots/flights/berlin-tiergarten.jpg)](docs/screenshots/flights/berlin-tiergarten.jpg) | [![A320-class airliner flying over Berlin in afternoon light](docs/screenshots/flights/berlin-airliner.jpg)](docs/screenshots/flights/berlin-airliner.jpg) |
+
+| Inside the C172 | Inside the airliner |
+| :--- | :--- |
+| [![C172 cockpit with live instruments and Berlin scenery through the windshield](docs/screenshots/flights/berlin-c172-cockpit.jpg)](docs/screenshots/flights/berlin-c172-cockpit.jpg) | [![Airliner flight deck with live displays during a flight over Berlin](docs/screenshots/flights/berlin-airliner-cockpit.jpg)](docs/screenshots/flights/berlin-airliner-cockpit.jpg) |
+
+**Ready for departure at Berlin Brandenburg**
+
+[![Airliner on the runway at Berlin Brandenburg Airport](docs/screenshots/flights/berlin-brandenburg-runway.jpg)](docs/screenshots/flights/berlin-brandenburg-runway.jpg)
+
 | San Francisco in flight | Sydney in evening light |
 | :--- | :--- |
 | [![C172 flying over San Francisco with volumetric clouds](docs/screenshots/flights/san-francisco-afternoon.jpg)](docs/screenshots/flights/san-francisco-afternoon.jpg) | [![C172 over Sydney with warm evening lighting](docs/screenshots/flights/sydney-golden-hour.jpg)](docs/screenshots/flights/sydney-golden-hour.jpg) |
 
-The Alpine flight above and these city views are **actual in-game captures** with streamed terrain, the shipped aircraft, and
+The Alpine flight above and these flight, cockpit and runway views are **actual in-game captures** with streamed terrain, the shipped aircraft, and
 in-game weather and post-processing. Provider attribution remains visible.
 
 **Prepare for departure** — choose your aircraft, route, weather and time of day before launch.

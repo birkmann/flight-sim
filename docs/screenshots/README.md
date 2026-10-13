@@ -1,7 +1,7 @@
 # README images
 
 These files are stored in the repository so the README does not depend on temporary screenshot URLs.
-The main README features the three in-game flight captures and one menu image, `briefing.jpg`.
+The main README features eight in-game captures and one menu image, `briefing.jpg`.
 The other menu captures and cockpit preview are retained here as development references.
 
 | File | Source |
@@ -50,8 +50,11 @@ npm run capture:flights
 
 Set `CHROMIUM_PATH` for another Chromium executable. On Linux, `HEADLESS=0` runs
 a visible browser with ANGLE OpenGL, which can expose a hardware WebGPU adapter
-when headless Chromium selects SwiftShader. Set `SHOT` to
-`san-francisco-afternoon`, `sydney-golden-hour`, or `alpine-clouds` for a single view.
+when headless Chromium selects SwiftShader. Set `SHOT` to one name or a comma-separated list:
+`san-francisco-afternoon`, `sydney-golden-hour`, `alpine-clouds`, `berlin-tiergarten`,
+`berlin-c172-cockpit`, `berlin-airliner`, `berlin-airliner-cockpit`, or `berlin-brandenburg-runway`.
+The Berlin cockpit views use the game's live aircraft instruments and streamed scenery.
+The runway view starts a flight at EDDB using the bundled airport data and checks that the aircraft is on the ground.
 `CHECK_WEATHER=1` also exercises every preset, night, and camera positions below,
 inside and above a cloud bank; diagnostic images go to `/tmp/weather-*.png`.
 The script fails on rendering errors or missing terrain instead of saving a
