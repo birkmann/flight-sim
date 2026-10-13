@@ -117,6 +117,12 @@ the model, run `npx playwright install chromium` once, then `npm run model:glide
 `CHROMIUM_PATH` can specify an existing Chromium executable. Source and asset credits
 are recorded in [model credits](../bevy/assets/models/CREDITS.md).
 
+`npm run model:exteriors` applies the white-and-navy aircraft finish after importing
+or regenerating the C172 and airliner. It resamples the airliner's fuselage stations,
+smooths exterior normals while retaining creases, adds its swept fuselage stripe and
+recessed engine fans, and preserves cockpit and control nodes. The sailplane generator
+includes tapered outer wings, narrow curved winglets, a slimmer T-tail and blue accents.
+
 The C172 asset includes a continuous cabin floor, closed footwells and firewall,
 finished door inserts, sills, armrests and heel mats, plus the corrected cabin liner,
 pilot-eye position and interior surface grain. `npm run model:c172` reapplies these refinements after importing the
@@ -173,18 +179,21 @@ its panel includes live warning, autopilot and gear lamps.
 ## Flight graphics
 
 The existing terrain streaming defaults, 512 MB budget and adaptive coarsening
-are retained. Ultra detail is available in Options; the capture script selects it.
+are retained. Ultra detail is available in Options; the capture script uses per-view
+detail settings so terrain can finish streaming before capture.
 
 The weather camera enables HDR, filmic tonemapping, dithering, restrained
-energy-conserving bloom and a small midtone contrast adjustment. Sun colour,
-intensity and smoothly adapting exposure follow solar elevation and cloud cover.
+energy-conserving bloom, richer saturation and a restrained midtone contrast
+adjustment. Sun colour, intensity and smoothly adapting exposure follow solar elevation and cloud cover.
 Cascaded sun shadows add depth to the aircraft; the photogrammetry remains unlit
 because its photographs already contain illumination and shadows.
 
-`clouds.wgsl` integrates a procedural 3D density field in 36 bounded steps with
-three sunward density samples for self-shadowing. An opaque depth prepass clips
+`clouds.wgsl` integrates a procedural 3D density field in 64 bounded steps with
+footprint-filtered detail and three sunward density samples for self-shadowing. An opaque depth prepass clips
 cloud integration against aircraft and terrain, including when the camera is
-inside the layer. Wind moves the field; floating-origin offsets keep it stable.
+inside the layer. Seeded, overlapping cloud lobes create coherent gaps in broken
+cloud, with gradient-noise erosion filtered to each ray step. Wind moves the field;
+floating-origin offsets keep it stable.
 The volume has a finite range and no temporal reconstruction or terrain cloud
 shadow map. This is an affordable approximation, not a meteorological model.
 

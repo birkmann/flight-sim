@@ -40,7 +40,9 @@ The `flights/` images are 1920 × 1080 browser captures made on 13 October 2026
 using the NVIDIA hardware WebGPU renderer. No scenery, aircraft, sky or lighting
 is composited or generated outside the game. The accompanying `manifest.json`
 records the simulated conditions, aircraft position and loaded terrain statistics.
-These are selected simulated weather conditions, not live observations.
+These are selected simulated weather conditions, not live observations. The current
+captures include the tapered sailplane, white-and-navy aircraft finishes, revised cloud
+volumes and richer in-game color grading.
 
 ```sh
 npm start

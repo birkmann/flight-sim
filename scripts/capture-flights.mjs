@@ -22,9 +22,9 @@ const browser = await chromium.launch({
  args: ['--no-sandbox', '--enable-unsafe-webgpu', '--ignore-gpu-blocklist', ...(process.env.HEADLESS === '0' ? ['--use-angle=gl'] : [])],
 });
 const shots = [
- {name:'san-francisco-afternoon', city:'sanfrancisco', aircraft:'c172', orbit:[-300,65], weather:{hour:15.5,day:180,clouds:0.48,cloudBase:1800,visibility:65000}},
+ {name:'san-francisco-afternoon', city:'sanfrancisco', aircraft:'c172', settleMs:12000, detail:1.4, orbit:[-300,65], weather:{hour:15.5,day:180,clouds:0.48,cloudBase:1800,visibility:65000}},
  {name:'sydney-golden-hour', city:'sydney', aircraft:'c172', orbit:[260,65], weather:{hour:17.8,day:15,clouds:0.35,cloudBase:1700,visibility:35000}},
- {name:'alpine-clouds', city:'matterhorn', aircraft:'glider', orbit:[-220,45], weather:{hour:10,day:180,clouds:0.58,cloudBase:4800,visibility:80000}},
+ {name:'alpine-clouds', city:'matterhorn', aircraft:'glider', orbit:[-220,45], weather:{hour:15.5,day:180,clouds:0.32,cloudBase:4300,visibility:80000}},
  {name:'berlin-tiergarten', city:'berlin', aircraft:'c172', fov:60, detail:1.4, settleMs:12000, orbit:[-250,85], weather:{hour:16,day:180,clouds:0.2,cloudBase:2200,visibility:60000}},
  {name:'berlin-c172-cockpit', city:'berlin', aircraft:'c172', view:'cockpit', fov:55, detail:1.4, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
  {name:'berlin-airliner', city:'berlin', aircraft:'airliner', fov:60, settleMs:12000, orbit:[-260,70], weather:{hour:17,day:180,clouds:0.25,cloudBase:2200,visibility:60000}},

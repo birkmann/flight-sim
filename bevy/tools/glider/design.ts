@@ -57,7 +57,7 @@ export function fusPhi(s: number, phi: number, inset = 0): V3 {
 /* canopy outline in (s, φ): |φ| < canopyPhi(s) */
 export const CANOPY_A = 0.48;
 export const CANOPY_B = 2.13;
-const FRAME_W = 0.03;
+const FRAME_W = 0.018;
 const TUB_INSET = 0.022;
 const phiSideT = curve([[0.48, 1.4], [0.9, 1.6], [1.4, 1.6], [1.85, 1.42], [2.13, 1.22]]);
 function canopyPhi(s: number) {
@@ -150,11 +150,11 @@ function surfaceSampler(surf: Surface) {
 
 /* wing */
 const W_E1 = 7.36; // end of the straight panel (path length)
-const W_R = 0.12; // winglet transition radius
+const W_R = 0.19; // winglet transition radius
 const W_G0 = (3 * Math.PI) / 180;
 const W_G1 = (80 * Math.PI) / 180;
 const W_E2 = W_E1 + W_R * (W_G1 - W_G0);
-const W_END = W_E2 + 0.27;
+const W_END = W_E2 + 0.29;
 function wingSpine(eta: number): { y: number; z: number; g: number } {
   if (eta <= W_E1) return { y: eta * Math.cos(W_G0), z: eta * Math.sin(W_G0), g: W_G0 };
   const y1 = W_E1 * Math.cos(W_G0), z1 = W_E1 * Math.sin(W_G0);
@@ -166,10 +166,10 @@ function wingSpine(eta: number): { y: number; z: number; g: number } {
   const d = eta - W_E2;
   return { y: y2 + d * Math.cos(W_G1), z: z2 + d * Math.sin(W_G1), g: W_G1 };
 }
-const wChord = curve([[0, 0.92], [0.6, 0.9], [3.3, 0.8], [5.7, 0.6], [W_E1, 0.405], [W_E2, 0.36], [W_END, 0.22]]);
-const wTE = curve([[0, 3.27], [W_E1, 3.27], [W_E2, 3.29], [W_END, 3.36]]);
+const wChord = curve([[0, 1.02], [0.6, 0.98], [3.3, 0.79], [5.7, 0.49], [W_E1, 0.235], [W_E2, 0.18], [W_END, 0.075]]);
+const wTE = curve([[0, 3.27], [3.3, 3.22], [5.7, 3.15], [W_E1, 3.20], [W_E2, 3.27], [W_END, 3.40]]);
 const wTwist = curve([[0, 1.0], [W_E1, -1.0], [W_END, -1.5]]);
-const wThick = curve([[0, 0.155], [W_E1, 0.13], [W_END, 0.11]]);
+const wThick = curve([[0, 0.145], [W_E1, 0.105], [W_END, 0.09]]);
 const wCamber = curve([[0, 0.03], [W_E1, 0.022], [W_END, 0.012]]);
 const W_CLOSE = 0.035;
 
@@ -212,12 +212,12 @@ function wingHinge(eta: number) {
 }
 
 /* fin */
-const Z_TOP = 1.08;
+const Z_TOP = 1.16;
 const FIN_Z0 = -0.075;
 const RUD_Z1 = Z_TOP - 0.04;
 const HINGE_FIN = 6.33;
-const finLE = (z: number) => 5.55 + ((z - 0.1) * 0.5) / (Z_TOP - 0.1);
-const finTE = (z: number) => 6.75 - ((z - FIN_Z0) * 0.13) / (Z_TOP - FIN_Z0);
+const finLE = (z: number) => 5.86 + ((z - 0.1) * 0.30) / (Z_TOP - 0.1);
+const finTE = (z: number) => 6.64 - ((z - FIN_Z0) * 0.12) / (Z_TOP - FIN_Z0);
 function finSection(z: number): Section {
   const le = finLE(z);
   const chord = finTE(z) - le;
@@ -227,7 +227,7 @@ function finSection(z: number): Section {
 const finHinge = (z: number) => clamp((HINGE_FIN - finLE(z)) / (finTE(z) - finLE(z)), 0.3, 0.95);
 
 /* stabiliser */
-const STAB_HALF = 1.22;
+const STAB_HALF = 1.06;
 const HINGE_STAB = 6.33;
 const STAB_TE = 6.545;
 const EL_IN = 0.045;
@@ -519,7 +519,7 @@ export function buildGlider(): GliderGeometry {
           if (sg.k === seamK) return "seam";
           if (sg.k === ailK) return inR(e, AL0 + G_S, AL1 - G_S) ? [ail, "white"] : "seam";
         }
-        return "white";
+        return e > W_E2 ? "navy" : "white";
       },
     });
 
@@ -610,7 +610,7 @@ export function buildGlider(): GliderGeometry {
         const k = smp.seg[j]!.k;
         if (k === 2 && z < RUD_Z1) return [meshes.rudder, "white"];
         if (z < 0) return null;
-        return k === 1 && z < RUD_Z1 ? "seam" : "white";
+        return k === 1 && z < RUD_Z1 ? "seam" : (z > 0.35 && k === 0 ? "navy" : "white");
       },
     });
     const rz = finZ.filter((z) => z <= RUD_Z1 + 1e-9);

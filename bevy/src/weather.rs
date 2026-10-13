@@ -44,7 +44,7 @@ fn above_weather(altitude: f32) -> f32 {
 
 /// Physical depth of the cloud bank, from fair-weather cumulus to rain-bearing cloud.
 fn cloud_depth(weather: &Weather) -> f32 {
-    650.0 + 1400.0 * weather.clouds + 1600.0 * weather.precipitation
+    1100.0 + 1600.0 * weather.clouds + 2200.0 * weather.precipitation
 }
 
 impl Plugin for WeatherPlugin {
@@ -284,8 +284,8 @@ fn setup(
         DebandDither::Enabled,
         Bloom { intensity: 0.035, low_frequency_boost: 0.15, ..Bloom::NATURAL },
         ColorGrading {
-            global: ColorGradingGlobal { post_saturation: 0.98, ..default() },
-            midtones: ColorGradingSection { contrast: 1.035, ..default() },
+            global: ColorGradingGlobal { post_saturation: 1.12, ..default() },
+            midtones: ColorGradingSection { contrast: 1.08, ..default() },
             ..default()
         },
         Exposure { ev100: 13.0 },
@@ -377,8 +377,8 @@ fn light_the_scene(
         }
     }
     let (cam_tf, exposure, fog, settings, ambient) = &mut *cam;
-    ambient.brightness = 80.0 + 650.0 * day * (0.5 + 0.5 * overcast);
-    ambient.color = Color::srgb(0.72, 0.81, 1.0);
+    ambient.brightness = 80.0 + 500.0 * day * (0.5 + 0.5 * overcast);
+    ambient.color = Color::srgb(0.78, 0.85, 1.0);
     let altitude = frame.altitude(cam_tf.translation);
     let above = above_weather(altitude);
     // Exposure follows the light, as an eye (or an auto-exposure camera) does.
@@ -449,7 +449,7 @@ fn place_clouds(
     let warm = 1.0 - smoothstep(0.02, 0.35, sky.sun_elevation);
     let light = 0.12 + 0.88 * smoothstep(-0.12, 0.2, sky.sun_elevation);
     let lit = Vec3::new(1.0, 1.0 - 0.3 * warm, 1.0 - 0.5 * warm) * light * 1.3;
-    let shade = Vec3::new(0.52, 0.56, 0.63) * light * (1.0 - 0.4 * weather.precipitation);
+    let shade = Vec3::new(0.34, 0.42, 0.55) * light * (1.0 - 0.4 * weather.precipitation);
     let flash = sky.flash * 1.5;
     let grey = 0.55 + 0.25 * weather.clouds;
     let brightness = 0.08 + 0.92 * sky.daylight.max(sky.flash);

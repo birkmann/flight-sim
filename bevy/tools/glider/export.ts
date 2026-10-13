@@ -2,11 +2,12 @@ import { buildGlider, buildDecals, NODE_NAMES } from './design';
 import { writeGlb, type GlbMaterial, type GlbNode } from './glb';
 import { panelTexture, registrationTexture } from './textures';
 const MATERIALS: Record<string, Omit<GlbMaterial, "name">> = {
-  white: { baseColor: [0.93, 0.935, 0.94, 1], metallic: 0, roughness: 0.24 },
-  whiteDS: { baseColor: [0.93, 0.935, 0.94, 1], metallic: 0, roughness: 0.3, doubleSided: true },
+  navy: { baseColor: [0.008, 0.045, 0.13, 1], metallic: 0.08, roughness: 0.25 },
+  white: { baseColor: [0.86, 0.885, 0.90, 1], metallic: 0, roughness: 0.24 },
+  whiteDS: { baseColor: [0.86, 0.885, 0.90, 1], metallic: 0, roughness: 0.3, doubleSided: true },
   seam: { baseColor: [0.48, 0.49, 0.5, 1], metallic: 0, roughness: 0.6 },
   frame: { baseColor: [0.035, 0.037, 0.04, 1], metallic: 0, roughness: 0.45, doubleSided: true },
-  glassOut: { baseColor: [0.05, 0.08, 0.11, 0.68], metallic: 0.2, roughness: 0.03, alphaMode: "BLEND" },
+  glassOut: { baseColor: [0.035, 0.075, 0.105, 0.78], metallic: 0.2, roughness: 0.03, alphaMode: "BLEND" },
   glassIn: { baseColor: [0.16, 0.2, 0.24, 0.1], metallic: 0, roughness: 0.05, alphaMode: "BLEND" },
   interior: { baseColor: [0.1, 0.105, 0.11, 1], metallic: 0, roughness: 0.9 },
   coaming: { baseColor: [0.045, 0.047, 0.05, 1], metallic: 0, roughness: 0.92, doubleSided: true },

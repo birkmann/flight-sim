@@ -38,7 +38,7 @@ window.renderGallery=async id=>{
   for(let x=-24;x<26;x+=8)box(scene,[.12,.015,110],[x,-.06,-15],material('#adc5d0'));
   for(let z=-35;z<40;z+=9)box(scene,[.25,.02,3],[0,-.05,z],material('#e0cb86'));
   const craft=(await new GLTFLoader().loadAsync('/assets/models/'+id+'.glb')).scene;
-  craft.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}if(n.name.startsWith('rotor-disc')||n.name.startsWith('aircraft-lamp-'))n.visible=false;});
+  craft.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}if(n.name==='crew-station')n.visible=false;if(n.name.startsWith('rotor-disc')||n.name.startsWith('aircraft-lamp-'))n.visible=false;});
   craft.rotation.y=.4;craft.updateMatrixWorld(true);const b=new T.Box3().setFromObject(craft),size=b.getSize(new T.Vector3());
   const scale=13/Math.max(size.x,size.z);craft.scale.setScalar(scale);craft.updateMatrixWorld(true);const bounds=new T.Box3().setFromObject(craft);const center=bounds.getCenter(new T.Vector3());craft.position.set(-center.x,-bounds.min.y,-center.z);scene.add(craft);
   camera.position.set(10,4.5,12);camera.lookAt(0,1.2,0);

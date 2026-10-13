@@ -21,7 +21,8 @@
     "check:deck": "tsc -p bevy/deck/tsconfig.json",
     "test:deck": "node scripts/check-deck.mjs",
     "model:finish": "node scripts/refine-flight-decks.mjs",
-    "capture:flights": "node scripts/capture-flights.mjs"
+    "capture:flights": "node scripts/capture-flights.mjs",
+    "model:exteriors": "node scripts/finish-aircraft-exteriors.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.14",
