@@ -116,6 +116,7 @@ try {
    const previous = manifest.findIndex(item => item.name === shot.name);
    if (previous >= 0) manifest.splice(previous, 1);
    manifest.push({...shot,capturedAt:new Date().toISOString(),viewport:[1920,1080],...state});
+   manifest.sort((a,b)=>shots.findIndex(s=>s.name===a.name)-shots.findIndex(s=>s.name===b.name));
    await writeFile(`${directory}/manifest.json`,JSON.stringify(manifest,null,2)+'\n');
    console.log('Captured',shot.name,JSON.stringify(state.terrain));
    if (process.env.CHECK_COCKPIT === '1' && shot.view === 'cockpit') {
@@ -137,6 +138,28 @@ try {
      await page.waitForFunction(() => window.__hudState.base.headLook.every(v => Math.abs(v) < .01));
      await page.mouse.up({button:'middle'});
      console.log('Cockpit inspected:',shot.aircraft,name);
+    }
+    if (shot.aircraft === 'c172') {
+     await page.evaluate(() => {
+      const hud=window.__hudState, flight=window.__deckFlight;
+      try {
+       const pixels=(rpm,fuel)=>{
+        window.__hudState={...hud,rpm,throttle:.65};
+        window.__deckFlight={...flight,fuel};
+        return new Uint8ClampedArray(window.__display('engine'));
+       };
+       const idle=pixels(700,null),cruise=pixels(2500,null),fueled=pixels(2500,95);
+       if(idle.length!==1024*366*4)throw new Error('Engine texture dimensions do not match the model display');
+       const changes=(a,b)=>a.reduce((n,v,i)=>n+(v!==b[i]),0);
+       if(changes(idle,cruise)<500 || changes(cruise,fueled)<100)throw new Error('Engine needles did not react to telemetry');
+      } finally {window.__hudState=hud;window.__deckFlight=flight;}
+      window.__cmds.push(JSON.stringify({type:'settings',settings:{fov:55}}));
+      dispatchEvent(new CustomEvent('sim:set-weather',{detail:{hour:23.5}}));
+     });
+     await page.waitForTimeout(2500);
+     if(errors.length)throw new Error(errors.join('\n').slice(0,10000));
+     await page.screenshot({path:'/tmp/cockpit-c172-night.jpg',type:'jpeg',quality:94});
+     console.log('Cockpit inspected: C172 night lighting and live engine needles');
     }
    }
    if (process.env.CHECK_WEATHER === '1' && shot === shots[0]) {

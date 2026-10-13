@@ -25,7 +25,7 @@
   const pad3 = (n) => String(Math.round(((n % 360) + 360) % 360) || 360).padStart(3, "0");
 
   /** Picture sizes (px): as wide over high as the screens built for them (COCKPIT_DISPLAY_ASPECT in the models). */
-  const SIZE = { radio: [512, 1024], ga: [1280, 512], glider: [1024, 576] };
+  const SIZE = { engine: [1024, 366], radio: [512, 1024], ga: [1280, 512], glider: [1024, 576] };
   const screens = new Map();
 
   function surface(name) {
@@ -53,6 +53,9 @@
     sc.last = now;
     g.save();
     const f = window.__deckFlight ?? s?.base?.flight;
+    if(name === "engine") {
+      enginePage(g,w,h,f,s);g.restore();return g.getImageData(0,0,w,h).data;
+    }
     if(name === "radio") {
       radioPage(g,w,h,f,s);g.restore();return g.getImageData(0,0,w,h).data;
     }
@@ -65,6 +68,33 @@
     }
     return g.getImageData(0, 0, w, h).data;
   };
+
+  function enginePage(g,w,h,f,s) {
+    g.fillStyle="#242522";g.fillRect(0,0,w,h);
+    const gauges=[
+      ["RPM",s?.rpm??f?.eng?.rpm,0,3000,"×100",100],
+      ["POWER",(s?.throttle??f?.eng?.lever??0)*100,0,100,"PERCENT",1],
+      ["FUEL",f?.fuel,0,200,"kg",1],
+    ];
+    gauges.forEach(([label,value,min,max,unit,scale],i)=>{
+      const x=176+i*336,y=h/2,r=135;
+      g.save();g.translate(x,y);
+      const face=g.createRadialGradient(-35,-50,10,0,0,r);face.addColorStop(0,"#202322");face.addColorStop(1,"#080b0d");
+      g.fillStyle=face;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();
+      const point=(t,radius)=>{const a=(-135+t*270)*Math.PI/180;return [Math.sin(a)*radius,-Math.cos(a)*radius];};
+      for(let tick=0;tick<=20;tick++) {
+        const a=point(tick/20,tick%5===0?99:109),b=point(tick/20,119);
+        g.strokeStyle="#d9d7cd";g.lineWidth=tick%5===0?3:1.5;g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();
+        if(tick%5===0){const p=point(tick/20,78);g.fillStyle="#d9d7cd";g.font="19px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(String(Math.round((min+(max-min)*tick/20)/scale)),...p);}
+      }
+      g.textAlign="center";g.fillStyle="#b7b9b0";g.font="17px sans-serif";g.fillText(label,0,-32);g.font="14px sans-serif";g.fillText(unit,0,62);
+      if(Number.isFinite(value)) {
+        const tip=point(clamp((value-min)/(max-min),0,1),106);
+        g.strokeStyle="#ede7cf";g.lineWidth=4;g.beginPath();g.moveTo(-tip[0]*.16,-tip[1]*.16);g.lineTo(...tip);g.stroke();
+      } else {g.fillStyle="#deb765";g.font="16px sans-serif";g.fillText("—",0,30);}
+      g.fillStyle="#202627";g.beginPath();g.arc(0,0,10,0,Math.PI*2);g.fill();g.restore();
+    });
+  }
 
   function radioPage(g,w,h,f,s) {
     g.fillStyle="#171c20";g.fillRect(0,0,w,h);

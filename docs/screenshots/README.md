@@ -43,6 +43,8 @@ records the simulated conditions, aircraft position and loaded terrain statistic
 These are selected simulated weather conditions, not live observations. The current
 captures include the tapered sailplane, white-and-navy aircraft finishes, revised cloud
 volumes and richer in-game color grading.
+The C172 cockpit capture also includes the rounded yokes, swept windshield posts,
+padded dashboard and live engine gauges from the latest cabin refinement.
 
 ```sh
 npm start
@@ -58,6 +60,9 @@ when headless Chromium selects SwiftShader. Set `SHOT` to one name or a comma-se
 The Berlin cockpit views use the game's live aircraft instruments and streamed scenery.
 They use 55° (C172) and 60° (airliner) vertical fields of view for readable instruments.
 The runway view starts a flight at EDDB using the bundled airport data and checks that the aircraft is on the ground.
+`CHECK_COCKPIT=1` checks wide, downward and side views without moving the flight
+controls, plus C172 night lighting and engine-needle updates; diagnostic images
+go to `/tmp/cockpit-*.jpg`.
 `CHECK_WEATHER=1` also exercises every preset, night, and camera positions below,
 inside and above a cloud bank; diagnostic images go to `/tmp/weather-*.png`.
 The script fails on rendering errors or missing terrain instead of saving a

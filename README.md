@@ -50,7 +50,7 @@ Explore a city, plan an airport-to-airport flight, or settle into the cockpit an
 | [![C172 flying over San Francisco with volumetric clouds](docs/screenshots/flights/san-francisco-afternoon.jpg)](docs/screenshots/flights/san-francisco-afternoon.jpg) | [![C172 over Sydney with warm evening lighting](docs/screenshots/flights/sydney-golden-hour.jpg)](docs/screenshots/flights/sydney-golden-hour.jpg) |
 
 The Alpine flight above and these flight, cockpit and runway views are **actual in-game captures** with streamed terrain, the shipped aircraft, and
-in-game weather and post-processing. Provider attribution remains visible.
+in-game weather and post-processing.
 
 **Prepare for departure** — choose your aircraft, route, weather and time of day before launch.
 
@@ -148,7 +148,7 @@ committed browser bundle. Run `npm run build` before publishing Rust or flight-d
 
 Based on `birkmann/eu-ui`, with a standalone civilian aircraft catalogue and flight interface.
 The sailplane and its instruments build on the local `dwd-hack-26` project.
-Google Photorealistic 3D Tiles are accessed through Cesium ion; provider attribution stays visible in-game.
+Google Photorealistic 3D Tiles are accessed through Cesium ion.
 
 [Aircraft credits](bevy/assets/models/CREDITS.md) · [Artwork credits](bevy/assets/ui/CREDITS.md) ·
 [Flag license](bevy/assets/flags/LICENSE) · [Import manifest](docs/import-manifest.json)

@@ -125,7 +125,10 @@ includes tapered outer wings, narrow curved winglets, a slimmer T-tail and blue 
 
 The C172 asset includes a continuous cabin floor, closed footwells and firewall,
 finished door inserts, sills, armrests and heel mats, plus the corrected cabin liner,
-pilot-eye position and interior surface grain. `npm run model:c172` reapplies these refinements after importing the
+pilot-eye position and interior surface grain. The visible cabin has smoothly swept
+window posts and seals, a padded dashboard lip, warm vinyl trim, and continuous cast
+yokes with rounded grips. The oversized overhead compass housing is removed; heading
+remains available on the live panel instrument. `npm run model:c172` reapplies these refinements after importing the
 original C172 model; it leaves an already refined asset unchanged. `npm test` checks
 that the cabin does not obscure the live instrument surface and that the surface
 fits both portrait and landscape views at the default 50° field of view. Geometry
@@ -138,6 +141,10 @@ bearings remain fixed, with sliding shafts extending behind the panel so they st
 connected throughout full pitch and roll travel. Its propeller transitions
 to a translucent blur at running speed; wingtip strobes and the red tail beacon flash.
 The radio stack shows live navigation, guidance and engine readings on the 3D panel.
+The right-hand engine gauges display RPM, commanded power, and fuel mass; fuel is
+shown as unavailable in local flights that do not simulate fuel. Analogue faces
+receive cabin lighting with a small backlight contribution, while electronic
+screens remain self-lit.
 `npm run model:c172` also installs this animation rig and the radio display surface.
 
 In flight, amber terrain cautions escalate to a red **PULL UP** alert and repeating

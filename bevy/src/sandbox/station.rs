@@ -23,6 +23,7 @@ pub(super) enum Display {
     Ga,
     Glider,
     Radio,
+    Engine,
     MfdNav,
     MfdStatus,
 }
@@ -37,6 +38,7 @@ impl Display {
             "ga" => Display::Ga,
             "glider" => Display::Glider,
             "radio" => Display::Radio,
+            "engine" => Display::Engine,
             "mfd-nav" => Display::MfdNav,
             "mfd-status" => Display::MfdStatus,
             _ => return None,
@@ -52,6 +54,7 @@ impl Display {
             Display::Ga => "ga",
             Display::Glider => "glider",
             Display::Radio => "radio",
+            Display::Engine => "engine",
             Display::MfdNav => "mfd-nav",
             Display::MfdStatus => "mfd-status",
         }
@@ -63,6 +66,7 @@ impl Display {
             Display::Ga => UVec2::new(1280, 512),
             Display::Glider => UVec2::new(1024, 576),
             Display::Radio => UVec2::new(512, 1024),
+            Display::Engine => UVec2::new(1024, 366),
             _ => UVec2::splat(512),
         }
     }
@@ -153,8 +157,16 @@ pub(super) fn wire_screens(
             let extent = Extent3d { width: size.x, height: size.y, depth_or_array_layers: 1 };
             // Kept on the CPU side as well: it is rewritten in place.
             let image = images.add(Image::new_fill(extent, TextureDimension::D2, &[4, 7, 10, 255], TextureFormat::Rgba8UnormSrgb, RenderAssetUsages::default()));
-            // Lit by itself, like a screen.
-            let material = materials.add(StandardMaterial { base_color_texture: Some(image.clone()), unlit: true, ..default() });
+            // Analogue faceplates receive cabin light; electronic displays emit it.
+            let analogue = matches!(d, Display::Ga | Display::Engine);
+            let material = materials.add(StandardMaterial {
+                base_color_texture: Some(image.clone()),
+                unlit: !analogue,
+                perceptual_roughness: 0.78,
+                emissive_texture: analogue.then(|| image.clone()),
+                emissive: if analogue { LinearRgba::rgb(0.06, 0.06, 0.06) } else { LinearRgba::BLACK },
+                ..default()
+            });
             (image, material)
         });
         let material = material.clone();
