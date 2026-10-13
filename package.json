@@ -17,7 +17,7 @@
     "render:ui": "node scripts/render-ui-gallery.mjs",
     "build:deck": "node scripts/build-deck.mjs",
     "model:glider": "node scripts/export-glider.mjs",
-    "model:c172": "node scripts/refine-c172.mjs && node scripts/animate-c172.mjs && node scripts/repair-c172-yokes.mjs",
+    "model:c172": "node scripts/refine-c172.mjs && node scripts/animate-c172.mjs && node scripts/repair-c172-yokes.mjs && node scripts/finish-c172-cabin.mjs",
     "check:deck": "tsc -p bevy/deck/tsconfig.json",
     "test:deck": "node scripts/check-deck.mjs",
     "model:finish": "node scripts/refine-flight-decks.mjs",

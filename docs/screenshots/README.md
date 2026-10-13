@@ -54,9 +54,12 @@ when headless Chromium selects SwiftShader. Set `SHOT` to one name or a comma-se
 `san-francisco-afternoon`, `sydney-golden-hour`, `alpine-clouds`, `berlin-tiergarten`,
 `berlin-c172-cockpit`, `berlin-airliner`, `berlin-airliner-cockpit`, or `berlin-brandenburg-runway`.
 The Berlin cockpit views use the game's live aircraft instruments and streamed scenery.
+They use 55° (C172) and 60° (airliner) vertical fields of view for readable instruments.
 The runway view starts a flight at EDDB using the bundled airport data and checks that the aircraft is on the ground.
 `CHECK_WEATHER=1` also exercises every preset, night, and camera positions below,
 inside and above a cloud bank; diagnostic images go to `/tmp/weather-*.png`.
 The script fails on rendering errors or missing terrain instead of saving a
 blank view as a gameplay screenshot. Press **F10** to hide overlays for manual
 captures; click the view, then right-drag to orbit and scroll to frame the aircraft.
+`CHECK_COCKPIT=1` checks seated head look, control isolation and recentering, and
+saves wide, footwell and side-view inspection images under `/tmp/cockpit-*.jpg`.

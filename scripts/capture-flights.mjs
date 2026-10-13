@@ -26,14 +26,31 @@ const shots = [
  {name:'sydney-golden-hour', city:'sydney', aircraft:'c172', orbit:[260,65], weather:{hour:17.8,day:15,clouds:0.35,cloudBase:1700,visibility:35000}},
  {name:'alpine-clouds', city:'matterhorn', aircraft:'glider', orbit:[-220,45], weather:{hour:10,day:180,clouds:0.58,cloudBase:4800,visibility:80000}},
  {name:'berlin-tiergarten', city:'berlin', aircraft:'c172', fov:60, detail:1.4, settleMs:12000, orbit:[-250,85], weather:{hour:16,day:180,clouds:0.2,cloudBase:2200,visibility:60000}},
- {name:'berlin-c172-cockpit', city:'berlin', aircraft:'c172', view:'cockpit', fov:75, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
+ {name:'berlin-c172-cockpit', city:'berlin', aircraft:'c172', view:'cockpit', fov:55, detail:1.4, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
  {name:'berlin-airliner', city:'berlin', aircraft:'airliner', fov:60, settleMs:12000, orbit:[-260,70], weather:{hour:17,day:180,clouds:0.25,cloudBase:2200,visibility:60000}},
- {name:'berlin-airliner-cockpit', city:'berlin', aircraft:'airliner', view:'cockpit', fov:80, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
+ {name:'berlin-airliner-cockpit', city:'berlin', aircraft:'airliner', view:'cockpit', fov:60, weather:{hour:14,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
  {name:'berlin-brandenburg-runway', city:'berlin', aircraft:'airliner', airport:'EDDB', orbit:[-330,45], weather:{hour:16,day:180,clouds:0.18,cloudBase:2200,visibility:60000}},
 ];
 const selectedNames = process.env.SHOT?.split(',');
 if (selectedNames?.some(name => !shots.some(s => s.name === name))) throw new Error(`Unknown SHOT: ${process.env.SHOT}`);
 const manifest = process.env.SHOT ? JSON.parse(await readFile(`${directory}/manifest.json`, 'utf8').catch(() => '[]')) : [];
+async function dragLook(page, delta) {
+ const before = await page.evaluate(() => window.__hudState.base.headLook);
+ await page.mouse.down({button:'right'});
+ await page.waitForTimeout(100);
+ // Relative pointer events avoid OS pointer recentering corrupting a scripted drag.
+ // Coalesced events reach winit through the same handler as physical mouse motion.
+ await page.evaluate(([movementX,movementY]) => {
+  const event = new PointerEvent('pointermove', {
+   bubbles:true, pointerId:1, pointerType:'mouse', isPrimary:true, button:-1, buttons:2,
+   movementX,movementY,
+  });
+  event.getCoalescedEvents = () => [event];
+  document.querySelector('#canvas').dispatchEvent(event);
+ }, delta);
+ await page.waitForFunction(({before,delta}) => window.__hudState.base.headLook.every((v,i) => Math.abs(v-before[i]+delta[i]*0.0025) < .03), {before,delta});
+ await page.mouse.up({button:'right'});
+}
 try {
  for (const shot of shots.filter(s => !selectedNames || selectedNames.includes(s.name))) {
   const page = await browser.newPage({ viewport: {width:1920,height:1080}, deviceScaleFactor:1 });
@@ -78,24 +95,11 @@ try {
    await page.locator('#canvas').click({position:{x:960,y:540}});
    await page.waitForFunction(()=>window.__hudState?.base?.locked);
    if (shot.orbit) {
-    await page.mouse.down({button:'right'});
-    await page.waitForTimeout(100);
-    // Relative pointer events avoid OS pointer recentering corrupting a scripted drag.
-    // These go through the same input handler as an ordinary right-drag.
     await page.evaluate(() => {
      window.__cmds.push(JSON.stringify({type:'view',view:'chase'}));
     });
     await page.waitForTimeout(200);
-    await page.evaluate(([movementX,movementY]) => {
-     const event = new PointerEvent('pointermove', {
-      bubbles:true, pointerId:1, pointerType:'mouse', isPrimary:true, button:-1, buttons:2,
-      movementX,movementY,
-     });
-     event.getCoalescedEvents = () => [event];
-     document.querySelector('#canvas').dispatchEvent(event);
-    }, shot.orbit);
-    await page.waitForTimeout(200);
-    await page.mouse.up({button:'right'});
+    await dragLook(page, shot.orbit);
     await page.waitForFunction(orbit => {
      const actual = window.__hudState?.base?.headLook;
      return actual && actual.every((v,i) => Math.abs(v + orbit[i] * 0.0025) < 0.03);
@@ -114,6 +118,27 @@ try {
    manifest.push({...shot,capturedAt:new Date().toISOString(),viewport:[1920,1080],...state});
    await writeFile(`${directory}/manifest.json`,JSON.stringify(manifest,null,2)+'\n');
    console.log('Captured',shot.name,JSON.stringify(state.terrain));
+   if (process.env.CHECK_COCKPIT === '1' && shot.view === 'cockpit') {
+    for (const [name, delta] of [['wide',[0,0]], ['footwell',[0,220]], ['left',[-340,40]], ['right',[340,40]]]) {
+     await page.evaluate(() => {
+      window.__cmds.push(JSON.stringify({type:'settings',settings:{fov:75}}));
+      window.__cmds.push(JSON.stringify({type:'view',view:'cockpit'}));
+     });
+     await page.waitForFunction(() => window.__cmds.length === 0 && window.__hudState.base.headLook.every(v => Math.abs(v) < .01));
+     await page.waitForTimeout(200);
+     await dragLook(page, delta);
+     await page.waitForFunction(delta => window.__hudState.base.headLook.every((v,i) => Math.abs(v + delta[i]*0.0025) < .03), delta);
+     const controls = await page.evaluate(() => window.__hudState.surfaces);
+     if (Math.abs(controls.roll) > .1 || Math.abs(controls.pitch) > .1) throw new Error('Cockpit head look moved flight controls');
+     await page.waitForTimeout(400);
+     if(errors.length) throw new Error(errors.join('\n').slice(0,10000));
+     await page.screenshot({path:`/tmp/cockpit-${shot.aircraft}-${name}.jpg`,type:'jpeg',quality:94});
+     await page.mouse.down({button:'middle'});
+     await page.waitForFunction(() => window.__hudState.base.headLook.every(v => Math.abs(v) < .01));
+     await page.mouse.up({button:'middle'});
+     console.log('Cockpit inspected:',shot.aircraft,name);
+    }
+   }
    if (process.env.CHECK_WEATHER === '1' && shot === shots[0]) {
     const presets = await page.evaluate(()=>window.__simCatalog.presets);
     for (const [name, weather] of [...presets, ['Night', {hour:23.5,clouds:0.3,precipitation:0,lightning:false}]]) {

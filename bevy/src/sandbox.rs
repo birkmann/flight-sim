@@ -501,7 +501,7 @@ struct Pilot {
     pitch: f32,
     /// Free-flight cruise speed (m/s), set with the mouse wheel.
     speed: f32,
-    /// The chase camera around an aircraft (yaw, pitch from dead astern, rad), turned with the right button held.
+    /// Aircraft chase orbit or seated head look (yaw, pitch from centre, rad), turned with right-drag.
     orbit: Vec2,
     /// The chase camera's distance, as a multiple of the vehicle's default; the mouse wheel sets it.
     chase_zoom: f32,
@@ -1182,6 +1182,7 @@ fn keys(
             View::Gimbal => "CAMERA VIEW",
         };
         pilot.say(name);
+        pilot.orbit = Vec2::ZERO;
         if pilot.view == View::Gimbal {
             pilot.pitch = -0.6;
         }
@@ -1383,8 +1384,9 @@ fn read_controls(
     vehicles: Query<(&Vehicle, &Transform)>,
     mut c: ResMut<Controls>,
 ) {
-    // With the right button held, the mouse turns the chase camera instead (`fly_free`).
-    let m = if pilot.view == View::Chase && buttons.pressed(MouseButton::Right) { Vec2::ZERO } else { mouse(&pilot, &settings, &motion) };
+    // Right-drag turns the camera in both external and seated aircraft views.
+    // Looking around must never feed an unintended pitch/roll input to the stick.
+    let m = if matches!(pilot.view, View::Chase | View::Cockpit | View::HeadUp) && buttons.pressed(MouseButton::Right) { Vec2::ZERO } else { mouse(&pilot, &settings, &motion) };
     let dt = time.delta_secs();
     let live = !settings.menu_open;
     // The controller needs no captured mouse.
@@ -1535,6 +1537,18 @@ fn fly_free(
         if pilot.locked && buttons.just_pressed(MouseButton::Middle) {
             pilot.orbit = Vec2::ZERO;
             pilot.chase_zoom = 1.0;
+        }
+    }
+    // Seated head look uses the same drag and gamepad stick as the chase orbit,
+    // with comfortable neck limits and a middle-click to return to the instruments.
+    if matches!(piloted, Some(Kind::Jet | Kind::Uav))
+        && matches!(pilot.view, View::Cockpit | View::HeadUp)
+        && !settings.menu_open
+    {
+        let drag = if buttons.pressed(MouseButton::Right) { m } else { Vec2::ZERO };
+        pilot.orbit = cockpit_look(pilot.orbit, drag, pad.look, dt);
+        if pilot.locked && buttons.just_pressed(MouseButton::Middle) {
+            pilot.orbit = Vec2::ZERO;
         }
     }
     // The pedals (Q/E, the controller's bumpers) turn the look, and with it the helicopter. The look leads the nose
@@ -2524,6 +2538,12 @@ fn hud(
     js::hud(&state.to_string());
 }
 
+/// Relative head movement: preserve the last glance and limit it to the cabin.
+fn cockpit_look(current: Vec2, drag: Vec2, stick: Vec2, dt: f32) -> Vec2 {
+    let next = current - drag * 0.0025 + Vec2::new(-stick.x, stick.y) * (2.3 * dt);
+    next.clamp(Vec2::new(-1.55, -1.05), Vec2::new(1.55, 0.8))
+}
+
 /// Imported cabin axes: +X forward, +Y up, +Z pilot's right.
 /// Positive roll input banks right: the top of the yoke must move toward +Z.
 /// Positive pitch pulls the shaft aft, toward the pilot, along -X.
@@ -2540,6 +2560,48 @@ mod tests {
     use bevy::ecs::system::RunSystemOnce;
 
     use super::*;
+
+    #[test]
+    fn cockpit_right_drag_does_not_steer_the_aircraft() {
+        let mut world = World::new();
+        let mut time = Time::<()>::default();
+        time.advance_by(Duration::from_millis(16));
+        world.insert_resource(time);
+        world.init_resource::<Settings>();
+        world.init_resource::<Pad>();
+        world.init_resource::<Controls>();
+        world.init_resource::<ButtonInput<KeyCode>>();
+        let mut buttons = ButtonInput::<MouseButton>::default();
+        buttons.press(MouseButton::Right);
+        world.insert_resource(buttons);
+        world.insert_resource(AccumulatedMouseMotion { delta: Vec2::new(180.0, 90.0) });
+        let aircraft = world.spawn((Vehicle::new(catalog::find("c172").unwrap(), 0.0, true), Transform::default())).id();
+        world.insert_resource(Pilot { vehicle: Some(aircraft), view: View::Cockpit, locked: true, ..default() });
+        for view in [View::Cockpit, View::HeadUp, View::Chase] {
+            world.resource_mut::<Pilot>().view = view;
+            world.run_system_once(read_controls).unwrap();
+            let controls = world.resource::<Controls>();
+            assert_eq!(controls.mouse_stick, Vec2::ZERO);
+            assert_eq!(controls.stick.pitch, 0.0);
+            assert_eq!(controls.stick.roll, 0.0);
+        }
+        world.resource_mut::<ButtonInput<MouseButton>>().release(MouseButton::Right);
+        world.run_system_once(read_controls).unwrap();
+        assert!(world.resource::<Controls>().stick.roll > 0.0);
+        assert!(world.resource::<Controls>().stick.pitch < 0.0);
+    }
+
+    #[test]
+    fn cockpit_head_look_stays_put_and_limits_neck_travel() {
+        let glance = cockpit_look(Vec2::ZERO, Vec2::new(200.0, 120.0), Vec2::ZERO, 0.016);
+        assert!(glance.x < 0.0 && glance.y < 0.0);
+        assert_eq!(cockpit_look(glance, Vec2::ZERO, Vec2::ZERO, 1.0), glance);
+        assert_eq!(cockpit_look(glance, Vec2::splat(10_000.0), Vec2::ZERO, 0.016), Vec2::new(-1.55, -1.05));
+        let one_step = cockpit_look(Vec2::ZERO, Vec2::ZERO, Vec2::new(0.3, -0.2), 0.5);
+        let mut many_steps = Vec2::ZERO;
+        for _ in 0..50 { many_steps = cockpit_look(many_steps, Vec2::ZERO, Vec2::new(0.3, -0.2), 0.01); }
+        assert!(one_step.distance(many_steps) < 1e-5);
+    }
 
     #[test]
     fn yokes_follow_pilot_roll_and_pitch_input() {

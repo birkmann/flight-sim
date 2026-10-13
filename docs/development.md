@@ -117,11 +117,15 @@ the model, run `npx playwright install chromium` once, then `npm run model:glide
 `CHROMIUM_PATH` can specify an existing Chromium executable. Source and asset credits
 are recorded in [model credits](../bevy/assets/models/CREDITS.md).
 
-The C172 asset includes a corrected cabin liner, pilot-eye position and finer interior
-surface grain. `npm run model:c172` reapplies these refinements after importing the
+The C172 asset includes a continuous cabin floor, closed footwells and firewall,
+finished door inserts, sills, armrests and heel mats, plus the corrected cabin liner,
+pilot-eye position and interior surface grain. `npm run model:c172` reapplies these refinements after importing the
 original C172 model; it leaves an already refined asset unchanged. `npm test` checks
 that the cabin does not obscure the live instrument surface and that the surface
-fits both portrait and landscape views at the default 50° field of view.
+fits both portrait and landscape views at the default 50° field of view. Geometry
+ray tests also check that scenery cannot show through the floor, firewall or lower doors.
+Right-drag or the gamepad's right stick looks around the cockpit without moving
+the flight controls; middle-click recentres the view, as does changing camera mode.
 
 The C172 yokes and rudder pedals follow the flight controls. Their dashboard
 bearings remain fixed, with sliding shafts extending behind the panel so they stay

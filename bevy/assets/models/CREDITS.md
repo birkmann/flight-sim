@@ -4,7 +4,8 @@
 `birkmann/eu-ui` at commit `d3604ec7dac5091415c296dca712888c370b1098`.
 These are procedural aircraft models exported by the original project with
 THREE.GLTFExporter. The airliner's original logo decals and their embedded texture have been removed.
-Both models have local cabin refinements; the C172 also has an animated control rig.
+Both models have local cabin refinements; the C172 also has an animated control rig,
+a closed floor and footwell enclosure, and locally generated door trim and fittings.
 The airliner's unused head-up combiner and support assembly are removed using an
 exact vertex mask derived from the original `airlinerCockpit.ts` generator.
 No new license is asserted here.

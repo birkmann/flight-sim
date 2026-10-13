@@ -77,6 +77,7 @@ The briefing shows the running app; its photographic card artwork is illustrativ
 | Landing gear / brakes | **G / B** |
 | Chase / cockpit view | **V** |
 | Look around the cockpit | Right-drag |
+| Centre the cockpit view | Middle-click |
 | Flight planner / aircraft selection | **P / Tab** |
 | Flight menu | **Esc** |
 | Hide or restore overlays | **F10** |

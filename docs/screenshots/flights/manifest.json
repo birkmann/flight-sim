@@ -456,306 +456,6 @@
     }
   },
   {
-    "name": "berlin-c172-cockpit",
-    "city": "berlin",
-    "aircraft": "c172",
-    "view": "cockpit",
-    "fov": 75,
-    "weather": {
-      "hour": 14,
-      "day": 180,
-      "clouds": 0.18,
-      "cloudBase": 2200,
-      "visibility": 60000
-    },
-    "capturedAt": "2026-10-13T05:37:47.720Z",
-    "viewport": [
-      1920,
-      1080
-    ],
-    "hud": {
-      "ab": false,
-      "agl": 264.1208801269531,
-      "alpha": 3.2125585079193115,
-      "alt": 297.3734130859375,
-      "ammo": "",
-      "bank": 0.008672704920172691,
-      "base": {
-        "alt": 299.1290588378906,
-        "aspect": 1.7777777910232544,
-        "cam": [
-          -8.266823768615723,
-          0.008759811520576477
-        ],
-        "combiner": null,
-        "contacts": [],
-        "flight": null,
-        "fov": 1.3089969158172607,
-        "fx": {
-          "daylight": 0.9656345844268799,
-          "flash": 0,
-          "weather": {
-            "atmosphere": true,
-            "cloudBase": 2200,
-            "cloudLayer": true,
-            "clouds": 0.18000000715255737,
-            "day": 180,
-            "hour": 14,
-            "lightning": false,
-            "precipitation": 0,
-            "snow": false,
-            "timeRate": 0,
-            "visibility": 60000,
-            "windFrom": 250,
-            "windSpeed": 2
-          }
-        },
-        "headLook": [
-          0,
-          0
-        ],
-        "lat": 52.51404546926602,
-        "locked": true,
-        "lon": 13.342477264511638,
-        "message": "",
-        "station": true,
-        "travel": null,
-        "view": "cockpit"
-      },
-      "beta": 0.00045265533844940364,
-      "collective": 0,
-      "depth": 0,
-      "erector": 0,
-      "fpm": [
-        -0.005628029350191355,
-        0.1561278998851776
-      ],
-      "g": 1.0008320808410645,
-      "gear": false,
-      "gearWarning": false,
-      "gs": 65.53778839111328,
-      "gun": null,
-      "gunEl": 0,
-      "hasErector": false,
-      "hasGear": false,
-      "hasTurret": false,
-      "heading": 84.48479461669922,
-      "health": 1,
-      "hullHeading": 84.04081726074219,
-      "ias": 62.71592712402344,
-      "id": "c172",
-      "ir": false,
-      "label": "C172",
-      "lat": 52.51404360882304,
-      "lift": 0,
-      "lon": 13.342480111552572,
-      "look": [
-        84.04081726074219,
-        -6.87549352645874
-      ],
-      "mach": 0.18758177757263184,
-      "mode": "jet",
-      "muzzle": false,
-      "onGround": false,
-      "pitch": 1.7331749200820923,
-      "pullUp": false,
-      "radar": [],
-      "range": null,
-      "reload": 0,
-      "rotor": 7.966181755065918,
-      "rounds": 0,
-      "rpm": 2130,
-      "speed": 65.55835723876953,
-      "speedbrake": false,
-      "stall": false,
-      "steer": 0,
-      "surfaces": {
-        "flap": 0,
-        "pitch": -0.00028455356368795037,
-        "roll": 0,
-        "yaw": -0.000040811712096910924
-      },
-      "tankSpeed": 0,
-      "target": null,
-      "tas": 63.620643615722656,
-      "terrainTti": null,
-      "throttle": 0.699999988079071,
-      "track": 84.04743194580078,
-      "turret": 0,
-      "vs": -1.6419689655303955,
-      "wing": null,
-      "zoom": 1
-    },
-    "terrain": {
-      "decodeMs": [
-        0.0952380895614624,
-        0.05238094925880432,
-        2.542857124691918
-      ],
-      "falloffM": 2000,
-      "halted": false,
-      "pressure": 1,
-      "residentMB": 302.815185546875,
-      "tiles": 1421,
-      "tilesPerS": 20.487805354602287,
-      "worstMs": 10.500000953674316
-    },
-    "gpu": {
-      "vendor": "nvidia",
-      "architecture": "pascal"
-    }
-  },
-  {
-    "name": "berlin-airliner-cockpit",
-    "city": "berlin",
-    "aircraft": "airliner",
-    "view": "cockpit",
-    "fov": 80,
-    "weather": {
-      "hour": 14,
-      "day": 180,
-      "clouds": 0.18,
-      "cloudBase": 2200,
-      "visibility": 60000
-    },
-    "capturedAt": "2026-10-13T05:38:50.477Z",
-    "viewport": [
-      1920,
-      1080
-    ],
-    "hud": {
-      "ab": false,
-      "agl": 500.6914367675781,
-      "alpha": 3.7915639877319336,
-      "alt": 533.4641723632812,
-      "ammo": "",
-      "bank": 0.002193907741457224,
-      "base": {
-        "alt": 538.2855834960938,
-        "aspect": 1.7777777910232544,
-        "cam": [
-          -7.719691753387451,
-          0.002212542574852705
-        ],
-        "combiner": null,
-        "contacts": [],
-        "flight": null,
-        "fov": 1.3962633609771729,
-        "fx": {
-          "daylight": 0.9656345844268799,
-          "flash": 0,
-          "weather": {
-            "atmosphere": true,
-            "cloudBase": 2200,
-            "cloudLayer": true,
-            "clouds": 0.18000000715255737,
-            "day": 180,
-            "hour": 14,
-            "lightning": false,
-            "precipitation": 0,
-            "snow": false,
-            "timeRate": 0,
-            "visibility": 60000,
-            "windFrom": 250,
-            "windSpeed": 2
-          }
-        },
-        "headLook": [
-          0,
-          0
-        ],
-        "lat": 52.5153759200404,
-        "locked": true,
-        "lon": 13.363493060213662,
-        "message": "",
-        "station": true,
-        "travel": null,
-        "view": "cockpit"
-      },
-      "beta": 0.0002276963641634211,
-      "collective": 0,
-      "depth": 0,
-      "erector": 0,
-      "fpm": [
-        -0.002104813465848565,
-        0.13004018366336823
-      ],
-      "g": 1.0067373514175415,
-      "gear": false,
-      "gearWarning": false,
-      "gs": 157.6346893310547,
-      "gun": null,
-      "gunEl": 0,
-      "hasErector": false,
-      "hasGear": true,
-      "hasTurret": false,
-      "heading": 84.2652359008789,
-      "health": 1,
-      "hullHeading": 84.04081726074219,
-      "ias": 151.78851318359375,
-      "id": "airliner",
-      "ir": false,
-      "label": "AIRLINER",
-      "lat": 52.515357263538604,
-      "lift": 0,
-      "lon": 13.363265629565273,
-      "look": [
-        84.04081726074219,
-        -6.87549352645874
-      ],
-      "mach": 0.4604722857475281,
-      "mode": "jet",
-      "muzzle": false,
-      "onGround": false,
-      "pitch": 2.280308723449707,
-      "pullUp": false,
-      "radar": [],
-      "range": null,
-      "reload": 0,
-      "rotor": 2.2142856121063232,
-      "rounds": 0,
-      "rpm": 592.056396484375,
-      "speed": 157.6881866455078,
-      "speedbrake": false,
-      "stall": false,
-      "steer": 0,
-      "surfaces": {
-        "flap": 0,
-        "pitch": -0.002928604604676366,
-        "roll": 0,
-        "yaw": -0.00012770348985213786
-      },
-      "tankSpeed": 0,
-      "target": null,
-      "tas": 155.749755859375,
-      "terrainTti": null,
-      "throttle": 0.699999988079071,
-      "track": 84.08618927001953,
-      "turret": 0,
-      "vs": -4.106858253479004,
-      "wing": null,
-      "zoom": 1
-    },
-    "terrain": {
-      "decodeMs": [
-        0.1066666603088379,
-        0.05666666328907013,
-        4.043333335717519
-      ],
-      "falloffM": 2000,
-      "halted": false,
-      "pressure": 1,
-      "residentMB": 240.92461776733398,
-      "tiles": 1035,
-      "tilesPerS": 29.658918869101733,
-      "worstMs": 10.499999046325684
-    },
-    "gpu": {
-      "vendor": "nvidia",
-      "architecture": "pascal"
-    }
-  },
-  {
     "name": "berlin-brandenburg-runway",
     "city": "berlin",
     "aircraft": "airliner",
@@ -1346,6 +1046,307 @@
       "tiles": 1039,
       "tilesPerS": 19.62708894137686,
       "worstMs": 10.199999809265137
+    },
+    "gpu": {
+      "vendor": "nvidia",
+      "architecture": "pascal"
+    }
+  },
+  {
+    "name": "berlin-airliner-cockpit",
+    "city": "berlin",
+    "aircraft": "airliner",
+    "view": "cockpit",
+    "fov": 60,
+    "weather": {
+      "hour": 14,
+      "day": 180,
+      "clouds": 0.18,
+      "cloudBase": 2200,
+      "visibility": 60000
+    },
+    "capturedAt": "2026-10-13T06:41:11.204Z",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hud": {
+      "ab": false,
+      "agl": 492.8281555175781,
+      "alpha": 3.8013498783111572,
+      "alt": 519.0994262695312,
+      "ammo": "",
+      "bank": 0.002197541296482086,
+      "base": {
+        "alt": 523.9210815429688,
+        "aspect": 1.7777777910232544,
+        "cam": [
+          -7.718433380126953,
+          0.0022159821819514036
+        ],
+        "combiner": null,
+        "contacts": [],
+        "flight": null,
+        "fov": 1.0471975803375244,
+        "fx": {
+          "daylight": 0.9656345844268799,
+          "flash": 0,
+          "weather": {
+            "atmosphere": true,
+            "cloudBase": 2200,
+            "cloudLayer": true,
+            "clouds": 0.18000000715255737,
+            "day": 180,
+            "hour": 14,
+            "lightning": false,
+            "precipitation": 0,
+            "snow": false,
+            "timeRate": 0,
+            "visibility": 60000,
+            "windFrom": 250,
+            "windSpeed": 2
+          }
+        },
+        "headLook": [
+          0,
+          0
+        ],
+        "lat": 52.51535084359718,
+        "locked": true,
+        "lon": 13.363096828076706,
+        "message": "",
+        "station": true,
+        "travel": null,
+        "view": "cockpit"
+      },
+      "beta": 0.0001501045626355335,
+      "collective": 0,
+      "depth": 0,
+      "erector": 0,
+      "fpm": [
+        -0.0030661665368825197,
+        0.18871045112609863
+      ],
+      "g": 1.0067687034606934,
+      "gear": false,
+      "gearWarning": false,
+      "gs": 157.33457946777344,
+      "gun": null,
+      "gunEl": 0,
+      "hasErector": false,
+      "hasGear": true,
+      "hasTurret": false,
+      "heading": 84.26528930664062,
+      "health": 1,
+      "hullHeading": 84.04081726074219,
+      "ias": 151.6022491455078,
+      "id": "airliner",
+      "ir": false,
+      "label": "AIRLINER",
+      "lat": 52.51533218641022,
+      "lift": 0,
+      "lon": 13.362869398712883,
+      "look": [
+        84.04081726074219,
+        -6.87549352645874
+      ],
+      "mach": 0.4594919979572296,
+      "mode": "jet",
+      "muzzle": false,
+      "onGround": false,
+      "pitch": 2.2815659046173096,
+      "pullUp": false,
+      "radar": [],
+      "range": null,
+      "reload": 0,
+      "rotor": 2.2142856121063232,
+      "rounds": 0,
+      "rpm": 592.056396484375,
+      "speed": 157.3885498046875,
+      "speedbrake": false,
+      "stall": false,
+      "steer": 0,
+      "surfaces": {
+        "flap": 0,
+        "pitch": -0.0029478631913661957,
+        "roll": 0,
+        "yaw": -0.0000723488992662169
+      },
+      "tankSpeed": 0,
+      "target": null,
+      "tas": 155.45013427734375,
+      "terrainTti": null,
+      "throttle": 0.699999988079071,
+      "track": 84.08582305908203,
+      "turret": 0,
+      "vs": -4.1211934089660645,
+      "wing": null,
+      "zoom": 1
+    },
+    "terrain": {
+      "decodeMs": [
+        0.08987341236464585,
+        0.07721518564827834,
+        3.7101265871072115
+      ],
+      "falloffM": 2000,
+      "halted": false,
+      "pressure": 1,
+      "residentMB": 314.40259170532227,
+      "tiles": 1915,
+      "tilesPerS": 76.0566190831752,
+      "worstMs": 10.90000057220459
+    },
+    "gpu": {
+      "vendor": "nvidia",
+      "architecture": "pascal"
+    }
+  },
+  {
+    "name": "berlin-c172-cockpit",
+    "city": "berlin",
+    "aircraft": "c172",
+    "view": "cockpit",
+    "fov": 55,
+    "detail": 1.4,
+    "weather": {
+      "hour": 14,
+      "day": 180,
+      "clouds": 0.18,
+      "cloudBase": 2200,
+      "visibility": 60000
+    },
+    "capturedAt": "2026-10-13T06:42:57.458Z",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "hud": {
+      "ab": false,
+      "agl": 265.0587158203125,
+      "alpha": 3.2019636631011963,
+      "alt": 298.3058776855469,
+      "ammo": "",
+      "bank": 0.008688506670296192,
+      "base": {
+        "alt": 300.06158447265625,
+        "aspect": 1.7777777910232544,
+        "cam": [
+          -8.266650199890137,
+          0.008775768801569939
+        ],
+        "combiner": null,
+        "contacts": [],
+        "flight": null,
+        "fov": 0.9599310755729675,
+        "fx": {
+          "daylight": 0.9656345844268799,
+          "flash": 0,
+          "weather": {
+            "atmosphere": true,
+            "cloudBase": 2200,
+            "cloudLayer": true,
+            "clouds": 0.18000000715255737,
+            "day": 180,
+            "hour": 14,
+            "lightning": false,
+            "precipitation": 0,
+            "snow": false,
+            "timeRate": 0,
+            "visibility": 60000,
+            "windFrom": 250,
+            "windSpeed": 2
+          }
+        },
+        "headLook": [
+          0,
+          0
+        ],
+        "lat": 52.51406347801872,
+        "locked": true,
+        "lon": 13.342759056265932,
+        "message": "",
+        "station": true,
+        "travel": null,
+        "view": "cockpit"
+      },
+      "beta": 0.0004235954547766596,
+      "collective": 0,
+      "depth": 0,
+      "erector": 0,
+      "fpm": [
+        -0.008283531293272972,
+        0.23047788441181183
+      ],
+      "g": 1.0008149147033691,
+      "gear": false,
+      "gearWarning": false,
+      "gs": 65.64398193359375,
+      "gun": null,
+      "gunEl": 0,
+      "hasErector": false,
+      "hasGear": false,
+      "hasTurret": false,
+      "heading": 84.48526000976562,
+      "health": 1,
+      "hullHeading": 84.04081726074219,
+      "ias": 62.81752395629883,
+      "id": "c172",
+      "ir": false,
+      "label": "C172",
+      "lat": 52.51406161771235,
+      "lift": 0,
+      "lon": 13.342761906968674,
+      "look": [
+        84.04081726074219,
+        -6.87549352645874
+      ],
+      "mach": 0.18790042400360107,
+      "mode": "jet",
+      "muzzle": false,
+      "onGround": false,
+      "pitch": 1.7333484888076782,
+      "pullUp": false,
+      "radar": [],
+      "range": null,
+      "reload": 0,
+      "rotor": 7.96618127822876,
+      "rounds": 0,
+      "rpm": 2130,
+      "speed": 65.66429138183594,
+      "speedbrake": false,
+      "stall": false,
+      "steer": 0,
+      "surfaces": {
+        "flap": 0,
+        "pitch": -0.0002788593992590904,
+        "roll": 0,
+        "yaw": -0.000037529360270127654
+      },
+      "tankSpeed": 0,
+      "target": null,
+      "tas": 63.72657012939453,
+      "terrainTti": null,
+      "throttle": 0.699999988079071,
+      "track": 84.04855346679688,
+      "turret": 0,
+      "vs": -1.6329013109207153,
+      "wing": null,
+      "zoom": 1
+    },
+    "terrain": {
+      "decodeMs": [
+        0.12727271968668158,
+        0.054545451294292106,
+        3.9818181558088823
+      ],
+      "falloffM": 2000,
+      "halted": false,
+      "pressure": 1,
+      "residentMB": 227.90053939819336,
+      "tiles": 956,
+      "tilesPerS": 10.735899129792951,
+      "worstMs": 16.200000762939453
     },
     "gpu": {
       "vendor": "nvidia",

@@ -79,6 +79,27 @@ test('C172 gauges remain unobstructed and framed at the default cockpit field of
   }
 });
 
+test('C172 cabin encloses the footwells, floor and lower doors without terrain leaks', async () => {
+  const root = await cabin(new URL('../../bevy/assets/models/c172.glb', import.meta.url));
+  const station = root.getObjectByName('crew-station');
+  const eye = root.getObjectByName('crew-eye').getWorldPosition(new T.Vector3());
+  const targets = [];
+  // Coordinates in the imported cabin: +X forward, +Y up, +Z starboard.
+  for (const z of [-.49, -.35, -.15, .15, .35, .49]) {
+    for (const x of [-.3, .15, .55, .85, 1.01]) targets.push([x, .70, z]);
+    for (const y of [.85, 1.05, 1.2]) targets.push([1.08, y, z]);
+  }
+  for (const z of [-.6, .6]) for (const x of [-.3, .1, .4, .65, .9]) {
+    for (const y of [.95, 1.2, 1.4]) targets.push([x, y, z]);
+  }
+  for (const target of targets) {
+    const point = station.localToWorld(new T.Vector3(...target));
+    const delta = point.sub(eye);
+    const ray = new T.Raycaster(eye, delta.clone().normalize(), .01, delta.length());
+    assert.ok(ray.intersectObject(station).length, `Open cabin at ${target}`);
+  }
+});
+
 test('C172 rig separates moving controls, lights, propeller blur and a front-facing radio surface',async()=>{
  const root=await cabin(new URL('../../bevy/assets/models/c172.glb',import.meta.url));
  for(const name of ['cockpit-yoke-left','cockpit-yoke-right','cockpit-pedal-left','cockpit-pedal-right']){
