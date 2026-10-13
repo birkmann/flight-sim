@@ -14,7 +14,7 @@
   </p>
 </div>
 
-[![Flight Simulator welcome screen with world map, free flight, hangar, sailplane and weather cards](docs/screenshots/welcome.jpg)](https://flight-sim-eight.vercel.app/)
+[![Sailplane flying over streamed Alpine terrain near the Matterhorn with in-game clouds and lighting](docs/screenshots/flights/alpine-clouds.jpg)](https://flight-sim-eight.vercel.app/)
 
 Fly above Google Photorealistic 3D Tiles in a C172, a sailplane or an A320-class airliner.
 Explore a city, plan an airport-to-airport flight, or settle into the cockpit and enjoy the view.
@@ -37,24 +37,14 @@ Explore a city, plan an airport-to-airport flight, or settle into the cockpit an
 | :--- | :--- |
 | [![C172 flying over San Francisco with volumetric clouds](docs/screenshots/flights/san-francisco-afternoon.jpg)](docs/screenshots/flights/san-francisco-afternoon.jpg) | [![C172 over Sydney with warm evening lighting](docs/screenshots/flights/sydney-golden-hour.jpg)](docs/screenshots/flights/sydney-golden-hour.jpg) |
 
-[![Sailplane over real Alpine terrain near Zermatt](docs/screenshots/flights/alpine-clouds.jpg)](docs/screenshots/flights/alpine-clouds.jpg)
-
-These are **actual in-game captures** with streamed terrain, the shipped aircraft, and
+The Alpine flight above and these city views are **actual in-game captures** with streamed terrain, the shipped aircraft, and
 in-game weather and post-processing. Provider attribution remains visible.
 
+**Prepare for departure** — choose your aircraft, route, weather and time of day before launch.
 
-| Choose how to fly | Find your aircraft |
-| :--- | :--- |
-| [![Three flight modes with a clearly highlighted active card](docs/screenshots/flight-modes.jpg)](docs/screenshots/flight-modes.jpg) | [![C172, airliner and sailplane in the aircraft selection screen](docs/screenshots/aircraft.jpg)](docs/screenshots/aircraft.jpg) |
-| **Flight modes** — free camera, local flying or an airport flight. | **Your hangar** — compare aircraft roles and specifications. |
+[![Flight briefing menu with aircraft details, route, time of day and weather choices](docs/screenshots/briefing.jpg)](docs/screenshots/briefing.jpg)
 
-| Prepare for departure | Inside the C172 |
-| :--- | :--- |
-| [![Flight briefing with aircraft details, controls, time of day and weather choices](docs/screenshots/briefing.jpg)](docs/screenshots/briefing.jpg) | [![C172 cockpit model preview with analogue gauges, navigator, radios and connected yokes](docs/screenshots/c172-cockpit-preview.png)](docs/screenshots/c172-cockpit-preview.png) |
-| **Briefing** — review the setup before launch. | **Cockpit model preview** — the shipped 3D cabin with live instrument textures and sample telemetry. |
-
-The menu screenshots show the running app. Their photographic card images are illustrative artwork,
-not gameplay captures. The cockpit image is a development preview without streamed terrain.
+The briefing shows the running app; its photographic card artwork is illustrative.
 [Image provenance and capture instructions →](docs/screenshots/README.md)
 
 ## Choose your aircraft

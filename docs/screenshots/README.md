@@ -1,6 +1,8 @@
 # README images
 
 These files are stored in the repository so the README does not depend on temporary screenshot URLs.
+The main README features the three in-game flight captures and one menu image, `briefing.jpg`.
+The other menu captures and cockpit preview are retained here as development references.
 
 | File | Source |
 | --- | --- |
