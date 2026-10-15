@@ -30,12 +30,36 @@ use serde::Deserialize;
 
 use crate::origin::Frame;
 
+mod cloud_noise;
 mod precip;
 
 pub struct WeatherPlugin;
 
 /// Above this height (m above sea level) the sky is raymarched rather than read from the lookup tables.
 const RAYMARCH_ABOVE: f32 = 10_000.0;
+
+/// Exposure (EV100) in full sun: the photographer's "sunny 16". The tiles are unlit photographs, already exposed for
+/// daylight, so they don't pass through the camera's exposure; everything that is lit (aircraft, the sky, the air's
+/// glow over the ground) does. At this exposure a surface lit by the sun comes out as a daylight photograph shows it
+/// (albedo 0.18 at about linear 0.16), so the lit and the photographed world agree. At EV 13 the aircraft burned out
+/// and the atmosphere's in-scattering was four times too strong for the photographs: a blue veil over the land that
+/// turned shaded slopes navy.
+const EV_SUNLIGHT: f32 = 15.0;
+
+/// Undoes the toe of the PBR Neutral tone mapper (see `setup`). Above linear 0.08 it subtracts 0.04, which the lift
+/// puts back; below, it maps x to 6.25 x², which the shadows' gain and gamma (the CDL's (0.7 x + 0.005)^(1/1.3))
+/// roughly invert. Fitted so photograph values from sRGB 3 to 230 come back within 7 levels (mean 3.6), black stays
+/// black (5), and the curve rises monotonically through Bevy's blend between the sections. Without it sRGB 40 came
+/// out at 9 and a shaded slope of (20, 30, 45) at (1, 18, 38): crushed to navy.
+fn photographic_grading() -> ColorGrading {
+    let restore = ColorGradingSection { lift: 0.04, ..default() };
+    ColorGrading {
+        global: ColorGradingGlobal { post_saturation: 1.04, ..default() },
+        shadows: ColorGradingSection { gain: 0.7, lift: 0.005, gamma: 1.3, ..default() },
+        midtones: restore,
+        highlights: restore,
+    }
+}
 
 /// How far the view has left the weather behind: 0 in the low air, 1 above 25 km.
 fn above_weather(altitude: f32) -> f32 {
@@ -241,6 +265,10 @@ pub struct CloudUniform {
 pub struct CloudMaterial {
     #[uniform(0)]
     pub u: CloudUniform,
+    /// The billow noise (`cloud_noise`).
+    #[texture(1, dimension = "3d")]
+    #[sampler(2)]
+    pub noise: Handle<Image>,
 }
 
 impl Material for CloudMaterial {
@@ -272,6 +300,7 @@ fn setup(
     mut media: ResMut<Assets<ScatteringMedium>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CloudMaterial>>,
+    mut images: ResMut<Assets<Image>>,
     mut sky: ResMut<Sky>,
     camera: Single<Entity, With<Tiles3dCamera>>,
 ) {
@@ -283,17 +312,20 @@ fn setup(
         DepthPrepass,
         DebandDither::Enabled,
         Bloom { intensity: 0.035, low_frequency_boost: 0.15, ..Bloom::NATURAL },
-        ColorGrading {
-            global: ColorGradingGlobal { post_saturation: 1.12, ..default() },
-            midtones: ColorGradingSection { contrast: 1.08, ..default() },
-            ..default()
-        },
-        Exposure { ev100: 13.0 },
-        Tonemapping::TonyMcMapface,
-        AtmosphereEnvironmentMapLight::default(),
+        // The tiles are already-exposed photographs, so the display transform must leave the range they occupy alone:
+        // Khronos PBR Neutral is the identity up to 0.76 and only rolls off highlights (snow, cloud tops, the sun)
+        // without the hue shifts and desaturation of a filmic curve; the grading undoes its toe. No contrast here:
+        // Bevy pivots it at linear 0.5, which pushed the photographs' shadows (linear 0.02..0.2) toward black.
+        photographic_grading(),
+        Exposure { ev100: EV_SUNLIGHT },
+        Tonemapping::KhronosPbrNeutral,
+        // The environment cubemap is redrawn from the sky-view lookup table and refiltered every frame. That table
+        // has about 110 texels per 90° of sky, so 128² faces hold all it has; the default 512² did 16 times the
+        // work (drawing, and the GGX and irradiance filtering of every mip) for the same light.
+        AtmosphereEnvironmentMapLight { size: UVec2::splat(128), ..default() },
         DistanceFog { color: Color::srgb(0.7, 0.72, 0.76), falloff: FogFalloff::from_visibility(1.0e6), ..default() },
     ));
-    let material = materials.add(CloudMaterial { u: CloudUniform::default() });
+    let material = materials.add(CloudMaterial { u: CloudUniform::default(), noise: images.add(cloud_noise::image()) });
     commands.spawn((
         CloudLayer, crate::sandbox::NoHit,
         bevy::camera::visibility::NoFrustumCulling,
@@ -344,7 +376,7 @@ fn light_the_scene(
     mut sky: ResMut<Sky>,
     frame: Res<Frame>,
     mut sun: Query<(&mut DirectionalLight, &mut Transform), Without<Tiles3dCamera>>,
-    mut cam: Single<(&Transform, &mut Exposure, &mut DistanceFog, &mut AtmosphereSettings, &mut AmbientLight), With<Tiles3dCamera>>,
+    mut cam: Single<(&Transform, &mut Exposure, &mut DistanceFog, &mut AtmosphereSettings, &mut AmbientLight, &mut ColorGrading), With<Tiles3dCamera>>,
     air: Query<Entity, With<Air>>,
     mut atmosphere: Query<&mut Visibility, With<CloudLayer>>,
     mut clear: ResMut<ClearColor>,
@@ -363,11 +395,25 @@ fn light_the_scene(
     // the eye (and the camera) adapt to it.
     let dim = 0.45 * overcast.min(0.2) + 0.12 * (overcast - 0.2).max(0.0);
     sky.daylight = day * (1.0 - dim) * (1.0 - 0.06 * weather.precipitation);
+    let altitude = frame.altitude(cam.0.translation);
+    let above = above_weather(altitude);
+    // Under a full overcast or in fog the sky is the cloud's grey all the way down: the physical sky (which fog
+    // doesn't reach) would show its clear-air colours at the horizon. The backdrop takes the fog's colour instead,
+    // until the view climbs out above the weather; toward space it darkens.
+    let overcast_sky = (weather.clouds > 0.85 || weather.visibility < 6000.0) && above < 0.5 && clear_of_cloud < 0.5;
+    let want_atmosphere = weather.atmosphere && !overcast_sky;
     for (mut light, mut tf) in &mut sun {
         // Below the horizon the "sun" is the moon: a faint, cool light from high up.
         if elev > -0.05 {
-            light.illuminance = lux::RAW_SUNLIGHT * smoothstep(-0.05, 0.3, elev) * (1.0 - 0.94 * overcast) * (1.0 - 0.2 * weather.precipitation) + sky.flash * 40_000.0;
-            let warmth = 1.0 - smoothstep(0.0, 0.4, elev);
+            // With the physical sky the light is the sun above the air: Bevy dims and reddens it (for the sky, its
+            // glow over the land and the lit scene) by the air it crosses. Dimming and warming it here as well browned
+            // and darkened the evening sky. Without it, the low sun fades and warms by hand.
+            let (low_sun, warmth) = if want_atmosphere {
+                (smoothstep(-0.05, 0.0, elev), 0.0)
+            } else {
+                (smoothstep(-0.05, 0.3, elev), 1.0 - smoothstep(0.0, 0.4, elev))
+            };
+            light.illuminance = lux::RAW_SUNLIGHT * low_sun * (1.0 - 0.94 * overcast) * (1.0 - 0.2 * weather.precipitation) + sky.flash * 40_000.0;
             light.color = Color::srgb(1.0, 1.0 - 0.28 * warmth, 1.0 - 0.52 * warmth);
             *tf = Transform::IDENTITY.looking_to(-to_sun, Vec3::Y);
         } else {
@@ -376,13 +422,20 @@ fn light_the_scene(
             *tf = Transform::IDENTITY.looking_to(Vec3::new(0.3, -1.0, 0.2), Vec3::Y);
         }
     }
-    let (cam_tf, exposure, fog, settings, ambient) = &mut *cam;
-    ambient.brightness = 80.0 + 500.0 * day * (0.5 + 0.5 * overcast);
-    ambient.color = Color::srgb(0.78, 0.85, 1.0);
-    let altitude = frame.altitude(cam_tf.translation);
-    let above = above_weather(altitude);
-    // Exposure follows the light, as an eye (or an auto-exposure camera) does.
-    let ev_day = 13.0 - 1.2 * overcast;
+    let (_, exposure, fog, settings, ambient, grading) = &mut *cam;
+    // Colours go flat under a grey sky.
+    let saturation = 1.04 - 0.16 * overcast;
+    if (grading.global.post_saturation - saturation).abs() > 0.002 {
+        grading.global.post_saturation = saturation;
+    }
+    // In clear air the atmosphere's environment map lights the shade with the real sky. Under cloud it is the cloud
+    // deck that does (a few thousand cd/m², from all round), and the atmosphere is switched off in a full overcast, so
+    // the ambient term carries it; at night a faint, cool moonlit fill.
+    ambient.brightness = 30.0 + day * (250.0 + 4500.0 * overcast);
+    ambient.color = Color::srgb(0.92 - 0.25 * (1.0 - day), 0.95 - 0.17 * (1.0 - day), 1.0);
+    // Exposure follows the light, as an eye (or an auto-exposure camera) does: sunny 16, opening up to about EV 12.6
+    // under a full overcast.
+    let ev_day = EV_SUNLIGHT - 2.4 * overcast;
     // From high up the air's glow over the ground drowned the land and sea in blue: stopping down dims that glow (and
     // the sky) while the tiles, unlit photographs, keep their brightness.
     let thin_haze = 1.5 * smoothstep(5_000.0, 80_000.0, altitude);
@@ -400,13 +453,10 @@ fn light_the_scene(
     fog.falloff = FogFalloff::from_visibility(weather.visibility.clamp(100.0, 150_000.0));
     fog.directional_light_color = Color::srgba(1.0, 0.86, 0.65, 0.18 * day * (1.0 - overcast));
     fog.directional_light_exponent = 12.0;
-    // Under a full overcast or in fog the sky is the cloud's grey all the way down: the physical sky (which fog
-    // doesn't reach) would show its clear-air colours at the horizon. The backdrop takes the fog's colour instead,
-    // until the view climbs out above the weather; toward space it darkens.
-    let overcast_sky = (weather.clouds > 0.85 || weather.visibility < 6000.0) && above < 0.5 && clear_of_cloud < 0.5;
-    let want_atmosphere = weather.atmosphere && !overcast_sky;
     let space = smoothstep(30_000.0, 100_000.0, altitude);
-    let backdrop = haze * (1.0 - space);
+    // Behind the physical sky is space: the atmosphere pass draws the sky over the backdrop, attenuated by the air, so a
+    // grey backdrop showed through it, greying the blue at midday and browning the whole sky at sunset.
+    let backdrop = if want_atmosphere { Vec3::ZERO } else { haze * (1.0 - space) };
     clear.0 = Color::srgb(backdrop.x, backdrop.y, backdrop.z);
     let mode = if altitude > RAYMARCH_ABOVE { AtmosphereMode::Raymarched } else { AtmosphereMode::LookupTexture };
     if settings.rendering_method as u32 != mode as u32 {
@@ -453,7 +503,9 @@ fn place_clouds(
     let flash = sky.flash * 1.5;
     let grey = 0.55 + 0.25 * weather.clouds;
     let brightness = 0.08 + 0.92 * sky.daylight.max(sky.flash);
-    let haze = Vec3::new(grey, grey + 0.02, grey + 0.06) * brightness;
+    // The fog's colour (sRGB, as `DistanceFog` takes it), in the linear values the shader blends with.
+    let haze = Color::srgb(grey * brightness, (grey + 0.02) * brightness, (grey + 0.06) * brightness).to_linear();
+    let haze = Vec3::new(haze.red, haze.green, haze.blue);
     // Fade the weather volume on the way into space.
     let opacity = 0.95 * (1.0 - smoothstep(12_000.0, 25_000.0, frame.altitude(cam.translation)));
     m.u = CloudUniform {

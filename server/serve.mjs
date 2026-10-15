@@ -28,7 +28,8 @@ export function createApp(options = {}) {
         return json(res, 403, { error: "Invalid path" });
       }
       const assets = relative.startsWith("assets/");
-      const root = resolve(ROOT, assets ? "bevy/assets" : "prebuilt");
+      // FLIGHT_SIM_DIST serves a local build instead of prebuilt/ (e.g. `trunk build --dist <dir>`).
+      const root = resolve(ROOT, assets ? "bevy/assets" : process.env.FLIGHT_SIM_DIST || "prebuilt");
       const file = resolve(root, assets ? relative.slice(7) : relative || "index.html");
       if (!file.startsWith(root + sep)) return json(res, 403, { error: "Invalid path" });
       let info;

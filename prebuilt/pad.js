@@ -125,7 +125,7 @@
   let capturing = null;
   window.__padPoll = () => {
     const p = pad();
-    const menuOpen = !!document.querySelector("#sim-menu:not([hidden]), #sim-start:not([hidden]), #flight-pause");
+    const menuOpen = !!p && !!document.querySelector("#sim-menu:not([hidden]), #sim-start:not([hidden]), #flight-pause");
     if (!p || menuOpen || capturing) {
       prevGame = {};
       return JSON.stringify({ connected: !!p });
@@ -159,7 +159,8 @@
   function menuTick() {
     requestAnimationFrame(menuTick);
     const p = pad();
-    const menu = document.querySelector("#sim-menu:not([hidden]), #sim-start:not([hidden]), #flight-pause");
+    // Without a pad there is nothing to do: the menus' state is not looked up every frame.
+    const menu = p && document.querySelector("#sim-menu:not([hidden]), #sim-start:not([hidden]), #flight-pause");
     if (!p || !menu || capturing) {
       prevMenu = null;
       return;

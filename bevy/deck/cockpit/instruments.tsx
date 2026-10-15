@@ -125,8 +125,9 @@ function Screw({ x, y, a }: { x: number; y: number; a: number }) {
 const SCREW_ANGLES = [17, 62, 133, 101];
 /** Instrument well, bezel, face background. */
 const Mount = memo(function Mount({ screws = true }: { screws?: boolean }) {
+  // data-layer: the static layers InstrumentTexture rasterizes once (see there).
   return (
-    <g>
+    <g data-layer="base">
       <circle cx={3} cy={6} r={121} fill="url(#ck-dropshadow)" />
       {screws &&
         [
@@ -145,7 +146,7 @@ const Mount = memo(function Mount({ screws = true }: { screws?: boolean }) {
 /** Face shading + glass reflection, drawn above needles. */
 const Glass = memo(function Glass() {
   return (
-    <g pointerEvents="none">
+    <g pointerEvents="none" data-layer="glass">
       <circle r={98} fill="url(#ck-faceshade)" />
       <path d="M -86 -30 A 92 92 0 0 1 30 -88 A 120 120 0 0 0 -86 -30 Z" fill="#fff" opacity={0.16} />
       <ellipse cx={-34} cy={-48} rx={62} ry={22} transform="rotate(-38 -34 -48)" fill="url(#ck-glare)" opacity={0.7} />
@@ -250,7 +251,7 @@ const AsiFace = memo(function AsiFace() {
   const major = range(40, 250, 10).map(asiAngle);
   const labels = [60, 80, 100, 120, 140, 160, 200, 250];
   return (
-    <g fontFamily="var(--ck-dial-font)" fill={INK}>
+    <g fontFamily="var(--ck-dial-font)" fill={INK} data-layer="base">
       <path d={arcD(91, asiAngle(70), asiAngle(180))} stroke="#2fb24c" strokeWidth={7} fill="none" />
       <path d={arcD(91, asiAngle(180), asiAngle(250))} stroke="#f2c230" strokeWidth={7} fill="none" />
       <path d={arcD(91, asiAngle(55), asiAngle(70))} stroke="#f4f1ea" strokeWidth={3} fill="none" opacity={0.85} />
@@ -304,7 +305,7 @@ const VarioFace = memo(function VarioFace() {
   const half = range(-4.5, 4.5, 1).map(varioAngle);
   const major = range(-5, 5, 1).map(varioAngle);
   return (
-    <g fontFamily="var(--ck-dial-font)" fill={INK}>
+    <g fontFamily="var(--ck-dial-font)" fill={INK} data-layer="base">
       <path d={arcD(94, varioAngle(0), varioAngle(5))} stroke="#38c46a" strokeWidth={3.2} fill="none" opacity={0.85} />
       <path d={arcD(94, varioAngle(-5), varioAngle(0))} stroke="#e8483c" strokeWidth={3.2} fill="none" opacity={0.85} />
       <path d={ticksD(minor, 84, 90)} stroke={INK} strokeWidth={1.1} />
@@ -380,7 +381,7 @@ const AltFace = memo(function AltFace({unit}: {unit:string}) {
   const major = range(0, 900, 100).map((m) => (m / 1000) * 360);
   const half = range(50, 950, 100).map((m) => (m / 1000) * 360);
   return (
-    <g fontFamily="var(--ck-dial-font)" fill={INK}>
+    <g fontFamily="var(--ck-dial-font)" fill={INK} data-layer="base">
       <path d={ticksD(minor, 84, 90)} stroke={INK} strokeWidth={1.2} />
       <path d={ticksD(half, 80, 90)} stroke={INK} strokeWidth={1.8} />
       <path d={ticksD(major, 74, 90)} stroke={INK} strokeWidth={3} />

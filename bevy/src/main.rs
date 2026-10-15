@@ -8,7 +8,8 @@
 //! distance-relaxed detail that Cesium does not apply); `loads`: tile loads in flight (default: 48 in the sandbox, the
 //! crate's 16 in the benchmark); `lead`: seconds ahead of the camera the tiles stream for (default: 0.75 in the
 //! sandbox, 0 in the benchmark); `view`: degrees past each edge of the screen the tiles are chosen for, 180 or more
-//! for all round (default: all round in the sandbox, the screen in the benchmark).
+//! for all round (default: all round in the sandbox, the screen in the benchmark); `floor=0`: leave the tiles' detail
+//! floor at the world frame's plane instead of lowering it to the ground (`TileFloor`).
 
 // The sandbox's HUD state is one large `json!` literal.
 #![recursion_limit = "256"]
@@ -27,7 +28,10 @@ use bevy::camera::primitives::Frustum;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_3d_tiles::{EcefOrigin, P3dtParams, Tiles3dAttach, Tiles3dCamera, Tiles3dConfig, Tiles3dDecodeStats, Tiles3dPlugin, Tiles3dSet, Tiles3dSets, TilesetCredits};
+use bevy::math::{DMat4, DVec3};
+use bevy_3d_tiles::{
+    EcefOrigin, P3dtParams, TileGeometry, Tiles3dAttach, Tiles3dCamera, Tiles3dConfig, Tiles3dDecodeStats, Tiles3dPlugin, Tiles3dSet, Tiles3dSets, Tiles3dTile, TilesetCredits,
+};
 use scenario::{Enu, Orbit, Scenario};
 
 /// Cesium ion's external asset for Google Photorealistic 3D Tiles (`PHOTOREAL_ION_ASSET`, packages/geo/src/layers.ts).
@@ -60,6 +64,8 @@ pub struct Options {
     pub loads: Option<usize>,
     pub lead: Option<f32>,
     pub view: Option<f32>,
+    /// Lower the tiles' detail floor to the ground (`TileFloor`); `floor=0` turns it off.
+    pub floor: bool,
     pub device_pixel_ratio: f64,
 }
 
@@ -121,6 +127,7 @@ fn run(key: String, o: Options) {
             ..defaults
         })
         .insert_resource(Lead { secs: o.lead.unwrap_or(lead), margin_deg: o.view.unwrap_or(view), ..default() })
+        .insert_resource(TileFloor { enabled: !bench && o.floor, ..default() })
         .insert_resource(sc)
         .insert_resource(ClearColor(Color::srgb(0.78, 0.84, 0.90)))
         .add_plugins(
@@ -141,7 +148,13 @@ fn run(key: String, o: Options) {
         .add_plugins(Tiles3dPlugin)
         .add_systems(Startup, setup)
         .add_systems(Update, (start_bench, move_units, place_symbols, report).chain())
-        .add_systems(Update, (lead_tiles.after(Tiles3dSet::Receive).before(Tiles3dSet::Drive), unlead_tiles.after(Tiles3dSet::Drive)));
+        .add_systems(
+            Update,
+            (
+                (probe_ground, lead_tiles).chain().after(Tiles3dSet::Receive).before(Tiles3dSet::Drive),
+                (unlead_tiles, lift_tiles).chain().after(Tiles3dSet::Drive),
+            ),
+        );
     if bench {
         app.add_systems(Update, drive_camera.before(move_units));
     } else {
@@ -172,9 +185,19 @@ fn setup(
     ));
     // Light for the vehicle models only: the tiles are unlit.
     // It lights the on-foot view's weapon too (render layer 1, `sandbox/infantry/viewmodel.rs`).
+    // Only the vehicles cast shadows (the tiles are kept out of the maps, `sandbox/paint.rs`), so the cascades hug the
+    // camera: the near one holds the aircraft of the chase view (a light aircraft 15 m out, ~2 cm texels) and the
+    // cockpit around the eye; the far one an airliner's 50 m chase, a zoomed-out view and the traffic nearby.
     commands.spawn((
         DirectionalLight { illuminance: 9_000.0, shadow_maps_enabled: !spike.bench, ..default() },
-        bevy::light::CascadeShadowConfigBuilder { maximum_distance: 3000.0, ..default() }.build(),
+        bevy::light::CascadeShadowConfigBuilder {
+            num_cascades: 2,
+            minimum_distance: 0.1,
+            first_cascade_far_bound: 30.0,
+            maximum_distance: 400.0,
+            overlap_proportion: 0.2,
+        }
+        .build(),
         Transform::from_rotation(Quat::from_euler(EulerRot::YXZ, 0.6, -0.9, 0.0)),
         bevy::camera::visibility::RenderLayers::from_layers(&[0, 1]),
     ));
@@ -240,9 +263,120 @@ fn tile_frustum(at: &Transform, projection: &Projection, margin_deg: f32) -> Opt
     Some(Frustum(bevy::math::primitives::ViewFrustum::from_clip_from_world(&clip_from_world)))
 }
 
+/// The floor under the tiles' detail. The crate never measures a tile as nearer than the camera's height above the
+/// world frame's ground plane (its guard against holes under a high camera, which sits inside its coarse tiles' tall
+/// boxes), and that plane is the frame's ellipsoid height at the start (Berlin's 75 m) wherever the frame moves. Over
+/// high ground the "height" therefore counted the mountain below too: over Zermatt at 2,760 m, 260 m above the
+/// slope, every tile within 2.7 km was measured as 2.7 km away and chosen ~10× too coarse (44 MB resident, the loads
+/// idle, slopes in blurred facets). For the crate's pass only, its world is dropped so that plane sits just under the
+/// nearest ground found by a few rays; the tiles' root lifts them back to where they are drawn.
+#[derive(Resource, Default)]
+struct TileFloor {
+    enabled: bool,
+    /// How far (m) the crate's world sits below ours.
+    drop: f32,
+    /// The distance (m) to the tiles along each probe ray, and when it was measured (s).
+    probes: [Option<(f32, f64)>; PROBES],
+    next: usize,
+    /// When the next probe is due (s), and the probes' cost (ms, count) for `__tileStats`.
+    probe_at: f64,
+    probe_ms: f64,
+    probe_n: u32,
+    /// When `drop` last changed (s): each change re-places every resident tile.
+    changed: f64,
+    /// The origin last handed to the crate, to tell it from one the sandbox wrote since (a rebase, a teleport).
+    written: Option<DMat4>,
+    /// The tileset's root entity, which the tiles hang from.
+    root: Option<Entity>,
+    /// When the crate's pass began this frame, and its total time (ms) and frames since the last `__tileStats`.
+    drive_from: Option<bevy::platform::time::Instant>,
+    drive_ms: f64,
+    drive_max_ms: f64,
+    drive_n: u32,
+}
+
+/// Probe rays: straight down, then 25° below the horizon ahead, left, behind and right.
+const PROBES: usize = 5;
+/// Seconds between probes (each direction is measured every `PROBES` of them), and how long (s) one counts.
+const PROBE_EVERY: f64 = 0.2;
+const PROBE_TTL: f64 = 3.0;
+
+impl TileFloor {
+    /// The crate's camera height for a camera at world height `cam_y`: just under the nearest ground. Hands the crate
+    /// the origin dropped to match and returns the drop.
+    fn lower(&mut self, now: f64, cam_y: f32, frame: &origin::Frame, origin: &mut EcefOrigin) -> f32 {
+        if !self.enabled || self.root.is_none() {
+            self.written = None;
+            return 0.0;
+        }
+        let near = self.probes.iter().flatten().filter(|(_, at)| now - at < PROBE_TTL).fold(f32::INFINITY, |m, (d, _)| m.min(*d));
+        // Only well off the mark, and not more than once a second: a change re-places every tile. Too low a floor
+        // costs little (the far detail relaxes a little sooner), too high one blurs everything nearer than it.
+        let floor = cam_y - self.drop;
+        if near.is_finite() && now - self.changed > 1.0 && (floor > near * 1.25 + 20.0 || floor < near * 0.5 - 20.0) {
+            let drop = (cam_y - 0.8 * near).max(0.0);
+            if drop != self.drop {
+                self.drop = drop;
+                self.changed = now;
+            }
+        }
+        let dropped = DMat4::from_translation(DVec3::new(0.0, -f64::from(self.drop), 0.0)) * frame.world_from_ecef;
+        if origin.world_from_ecef != Some(dropped) {
+            origin.world_from_ecef = Some(dropped);
+        }
+        self.written = Some(dropped);
+        self.drop
+    }
+}
+
+/// One probe ray from the camera to the tiles every `PROBE_EVERY`, round the `PROBES` directions.
+fn probe_ground(
+    time: Res<Time>,
+    mut floor: ResMut<TileFloor>,
+    cam: Single<&GlobalTransform, With<Tiles3dCamera>>,
+    tiles: Query<(), With<TileGeometry>>,
+    mut ray_cast: MeshRayCast,
+) {
+    if !floor.enabled || floor.root.is_none() {
+        return;
+    }
+    // A ray against the tiles costs a broad pass over every tile mesh and a narrow one over the few it crosses: a
+    // few a second are enough for a floor that only has to be within ~25% of the ground.
+    let now = time.elapsed_secs_f64();
+    if now < floor.probe_at {
+        return;
+    }
+    floor.probe_at = now + PROBE_EVERY;
+    let started = bevy::platform::time::Instant::now();
+    let i = floor.next;
+    floor.next = (i + 1) % PROBES;
+    let ahead = cam.forward().with_y(0.0).normalize_or(Vec3::NEG_Z);
+    let dir = if i == 0 {
+        Vec3::NEG_Y
+    } else {
+        let (s, c) = 25f32.to_radians().sin_cos();
+        Quat::from_rotation_y(std::f32::consts::FRAC_PI_2 * (i - 1) as f32) * ahead * c - Vec3::Y * s
+    };
+    let Ok(dir) = Dir3::new(dir) else { return };
+    let filter = |e: Entity| tiles.contains(e);
+    let settings = MeshRayCastSettings::default().with_filter(&filter).with_visibility(RayCastVisibility::Visible).always_early_exit();
+    let d = ray_cast.cast_ray(Ray3d::new(cam.translation(), dir), &settings).first().map_or(f32::INFINITY, |(_, hit)| hit.distance);
+    floor.probes[i] = Some((d, now));
+    floor.probe_ms += started.elapsed().as_secs_f64() * 1e3;
+    floor.probe_n += 1;
+}
+
 /// Moves the tile camera ahead and widens its view for the crate's streaming pass only (`unlead_tiles` puts both
-/// back). Horizontal only, so the camera's height above the ground, which sets the detail right below it, stays true.
-fn lead_tiles(time: Res<Time>, mut lead: ResMut<Lead>, mut cam: Single<(&mut GlobalTransform, &mut Frustum, &Projection), With<Tiles3dCamera>>) {
+/// back). Horizontal only, so the camera's height above the ground, which sets the detail right below it, stays
+/// true; the drop of `TileFloor` lowers it with the crate's whole world.
+fn lead_tiles(
+    time: Res<Time>,
+    mut lead: ResMut<Lead>,
+    mut floor: ResMut<TileFloor>,
+    frame: Res<origin::Frame>,
+    mut origin: ResMut<EcefOrigin>,
+    mut cam: Single<(&mut GlobalTransform, &mut Frustum, &Projection), With<Tiles3dCamera>>,
+) {
     let (tf, frustum, projection) = &mut *cam;
     let at = tf.translation();
     let dt = time.delta_secs();
@@ -256,14 +390,16 @@ fn lead_tiles(time: Res<Time>, mut lead: ResMut<Lead>, mut cam: Single<(&mut Glo
         }
     }
     lead.last = Some(at);
-    if lead.secs <= 0.0 && lead.margin_deg <= 0.0 {
+    floor.drive_from = Some(bevy::platform::time::Instant::now());
+    let drop = floor.lower(time.elapsed_secs_f64(), at.y, &frame, &mut origin);
+    if lead.secs <= 0.0 && lead.margin_deg <= 0.0 && drop == 0.0 {
         return;
     }
     let ahead = (lead.velocity * lead.secs.max(0.0)).clamp_length_max(MAX_LEAD_M);
     let mut t = tf.compute_transform();
-    t.translation += ahead;
+    t.translation += ahead - Vec3::Y * drop;
     // The frustum from the lead position too: the one Bevy keeps is the real camera's, from the last frame.
-    let Some(wide) = tile_frustum(&t, projection, lead.margin_deg.max(0.0)) else { return };
+    let wide = tile_frustum(&t, projection, lead.margin_deg.max(0.0)).unwrap_or_default();
     lead.real = Some((**tf, **frustum));
     **tf = GlobalTransform::from(t);
     **frustum = wide;
@@ -273,6 +409,30 @@ fn unlead_tiles(mut lead: ResMut<Lead>, mut cam: Single<(&mut GlobalTransform, &
     if let Some((tf, frustum)) = lead.real.take() {
         *cam.0 = tf;
         *cam.1 = frustum;
+    }
+}
+
+/// Lifts the tiles back by the drop the crate placed them with: by `TileFloor`'s if it still had the origin handed
+/// to it, by none if the sandbox wrote its own since (the tiles were then re-placed in the true frame).
+fn lift_tiles(mut floor: ResMut<TileFloor>, origin: Res<EcefOrigin>, tiles: Query<&ChildOf, With<Tiles3dTile>>, mut transforms: Query<&mut Transform, Without<Tiles3dTile>>) {
+    if let Some(from) = floor.drive_from.take() {
+        let ms = from.elapsed().as_secs_f64() * 1e3;
+        floor.drive_ms += ms;
+        floor.drive_max_ms = floor.drive_max_ms.max(ms);
+        floor.drive_n += 1;
+    }
+    if !floor.enabled {
+        return;
+    }
+    if floor.root.is_none_or(|r| !transforms.contains(r)) {
+        floor.root = tiles.iter().next().map(ChildOf::parent);
+        floor.written = None;
+    }
+    let Some(mut root) = floor.root.and_then(|r| transforms.get_mut(r).ok()) else { return };
+    let lift = if floor.written.is_some() && origin.world_from_ecef == floor.written { floor.drop } else { 0.0 };
+    let want = Vec3::Y * lift;
+    if root.translation != want {
+        root.translation = want;
     }
 }
 
@@ -332,7 +492,18 @@ fn place_symbols(
 }
 
 /// Tile content decoded into the scene (the counterpart of Cesium's `tileLoad`), memory, and the provider's credits.
-fn report(mut spike: ResMut<Spike>, time: Res<Time>, stats: Res<Tiles3dDecodeStats>, sets: Res<Tiles3dSets>, config: Res<Tiles3dConfig>, credits: Res<TilesetCredits>) {
+#[allow(clippy::too_many_arguments)]
+fn report(
+    mut spike: ResMut<Spike>,
+    time: Res<Time>,
+    stats: Res<Tiles3dDecodeStats>,
+    sets: Res<Tiles3dSets>,
+    config: Res<Tiles3dConfig>,
+    credits: Res<TilesetCredits>,
+    mut floor: ResMut<TileFloor>,
+    drawn: Query<(&Mesh3d, &InheritedVisibility), With<TileGeometry>>,
+    meshes: Res<Assets<Mesh>>,
+) {
     while spike.bench && spike.tiles_seen < stats.tiles {
         spike.tiles_seen += 1;
         js::call("__benchTile", None);
@@ -353,6 +524,14 @@ fn report(mut spike: ResMut<Spike>, time: Res<Time>, stats: Res<Tiles3dDecodeSta
         let ms = |i: usize| if n > 0.0 { (stats.stage_ms[i] - last.stage_ms[i]) / n } else { 0.0 };
         let resident = sets.resident_content_bytes() as f64;
         let budget = config.memory_budget_bytes as f64;
+        // What the cut draws: tile meshes shown and their triangles (thousands), the GPU's share of the detail.
+        let (mut shown, mut tris) = (0u32, 0usize);
+        for (mesh, vis) in &drawn {
+            if vis.get() {
+                shown += 1;
+                tris += meshes.get(&mesh.0).map_or(0, |m| m.indices().map_or(m.count_vertices(), |i| i.len()) / 3);
+            }
+        }
         js::set_global(
             "__tileStats",
             &serde_json::json!({
@@ -364,10 +543,20 @@ fn report(mut spike: ResMut<Spike>, time: Res<Time>, stats: Res<Tiles3dDecodeSta
                 "pressure": if budget > 0.0 { (resident / budget).clamp(1.0, 8.0) } else { 1.0 },
                 "halted": budget > 0.0 && resident > budget * 1.5,
                 "falloffM": config.detail_falloff_m,
+                // How far the crate's world is dropped (`TileFloor`), and the nearest ground the probes found.
+                "floorDropM": floor.drop,
+                // The crate's streaming pass (selection over its whole tile tree, scheduling, eviction): ms a frame.
+                "driveMs": if floor.drive_n > 0 { floor.drive_ms / f64::from(floor.drive_n) } else { 0.0 },
+                "driveMaxMs": floor.drive_max_ms,
+                "probeMs": if floor.probe_n > 0 { floor.probe_ms / f64::from(floor.probe_n) } else { 0.0 },
+                "shownMeshes": shown,
+                "shownTrisK": tris / 1000,
+                "nearM": floor.probes.iter().flatten().map(|p| p.0).fold(f32::INFINITY, f32::min).min(1e9),
             })
             .to_string(),
         );
         spike.stats_last = *stats;
+        (floor.probe_ms, floor.probe_n, floor.drive_ms, floor.drive_max_ms, floor.drive_n) = (0.0, 0, 0.0, 0.0, 0);
     }
     if credits.is_changed() {
         js::set_attribution(&credits.lines.join(" · "));
@@ -485,20 +674,6 @@ mod js {
     }
 
     /// Whether the browser still holds the pointer lock (it drops it on Esc without telling the window).
-    /// A cockpit screen's picture from the page (`window.__display`, displays.js), into `out` (RGBA, rows from the
-    /// top) when it is that size.
-    pub fn display_pixels(name: &str, out: &mut [u8]) -> bool {
-        let Some(win) = web_sys::window() else { return false };
-        let Ok(f) = js_sys::Reflect::get(&win, &JsValue::from_str("__display")) else { return false };
-        let Ok(f) = f.dyn_into::<js_sys::Function>() else { return false };
-        let Ok(pixels) = f.call1(&JsValue::NULL, &JsValue::from_str(name)).and_then(|v| v.dyn_into::<js_sys::Uint8ClampedArray>().map_err(JsValue::from)) else { return false };
-        if pixels.length() as usize != out.len() {
-            return false;
-        }
-        pixels.copy_to(out);
-        true
-    }
-
     pub fn pointer_locked() -> bool {
         let doc = web_sys::window().and_then(|w| w.document());
         doc.and_then(|d| js_sys::Reflect::get(&d, &JsValue::from_str("pointerLockElement")).ok()).is_some_and(|el| !el.is_null() && !el.is_undefined())
@@ -532,9 +707,6 @@ mod js {
     pub fn pointer_locked() -> bool {
         true
     }
-    pub fn display_pixels(_name: &str, _out: &mut [u8]) -> bool {
-        false
-    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -553,6 +725,7 @@ fn main() {
         loads: param("loads").and_then(|n| n.parse().ok()),
         lead: param("lead").and_then(|s| s.parse().ok()),
         view: param("view").and_then(|s| s.parse().ok()),
+        floor: param("floor").is_none_or(|f| f != "0"),
         device_pixel_ratio: win.device_pixel_ratio(),
     };
     // The tileset endpoint comes from the workspace gateway's tile resolver at runtime, as in the app's globe
@@ -591,7 +764,7 @@ fn main() {
     let key = std::env::var("GOOGLE_MAPS_API_KEY").expect("set GOOGLE_MAPS_API_KEY");
     let bench = std::env::args().any(|a| a == "--bench");
     let units = std::env::args().skip(1).find_map(|n| n.parse().ok());
-    run(key, Options { bench, units, falloff: None, loads: None, lead: None, view: None, device_pixel_ratio: 1.0 });
+    run(key, Options { bench, units, falloff: None, loads: None, lead: None, view: None, floor: true, device_pixel_ratio: 1.0 });
 }
 
 #[cfg(test)]
@@ -636,6 +809,7 @@ mod tests {
     fn unlead_restores_the_camera() {
         let mut app = App::new();
         app.insert_resource(Time::<()>::default()).insert_resource(Lead { secs: 0.75, margin_deg: ALL_ROUND_DEG, velocity: Vec3::X * 200.0, ..default() });
+        app.init_resource::<TileFloor>().init_resource::<EcefOrigin>().insert_resource(origin::Frame::new(52.5, 13.4, 75.0));
         let (tf, projection) = camera();
         let real_frustum = tile_frustum(&tf, &projection, 0.0).unwrap();
         let cam = app.world_mut().spawn((Tiles3dCamera, GlobalTransform::from(tf), real_frustum, projection)).id();
@@ -646,5 +820,27 @@ mod tests {
         app.world_mut().run_system_once(unlead_tiles).unwrap();
         assert_eq!(*app.world().get::<GlobalTransform>(cam).unwrap(), GlobalTransform::from(tf));
         assert!(!seen(app.world().get::<Frustum>(cam).unwrap(), Vec3::new(0.0, 0.0, 2_000.0)));
+    }
+
+    #[test]
+    fn the_floor_drops_to_the_nearest_ground() {
+        let frame = origin::Frame::new(45.98, 7.66, 75.0);
+        let mut origin = EcefOrigin { world_from_ecef: Some(frame.world_from_ecef) };
+        let mut floor = TileFloor { enabled: true, root: Some(Entity::PLACEHOLDER), changed: -10.0, ..default() };
+        // Nothing found yet: the crate keeps the true frame.
+        assert_eq!(floor.lower(0.0, 2_740.0, &frame, &mut origin), 0.0);
+        assert_eq!(origin.world_from_ecef, Some(frame.world_from_ecef));
+        // 260 m above the slope, 2,740 m above the frame's plane: the crate's camera ends up ~210 m above its plane.
+        floor.probes = [260.0, 900.0, f32::INFINITY, 400.0, 700.0].map(|d| Some((d, 0.0)));
+        let drop = floor.lower(0.5, 2_740.0, &frame, &mut origin);
+        assert!((2_740.0 - drop - 208.0).abs() < 1.0, "{drop}");
+        let world = origin.world_from_ecef.unwrap();
+        let p = DVec3::new(6_378_137.0, 0.0, 0.0);
+        assert!(((frame.world_from_ecef.transform_point3(p) - world.transform_point3(p)) - DVec3::Y * f64::from(drop)).length() < 1e-6);
+        // Climbing 100 m keeps it (the floor rises with the camera): no re-placing every tile.
+        floor.probes.iter_mut().flatten().for_each(|p| *p = (p.0 + 100.0, 2.0));
+        assert_eq!(floor.lower(3.0, 2_840.0, &frame, &mut origin), drop);
+        // Stale probes change nothing.
+        assert_eq!(floor.lower(10.0, 6_000.0, &frame, &mut origin), drop);
     }
 }

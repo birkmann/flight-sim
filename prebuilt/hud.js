@@ -10,6 +10,18 @@
   document.addEventListener("DOMContentLoaded", () => document.body.append(fxCanvas, canvas));
   const g = canvas.getContext("2d");
   const fg = fxCanvas.getContext("2d");
+  // Whether anything was painted on the HUD's canvas this frame (here or by cockpit.js): an untouched canvas is not
+  // cleared again, so the compositor need not take a new full-screen picture of it every frame.
+  let drawn = false;
+  for (const m of ["fill", "stroke", "fillRect", "strokeRect", "fillText", "strokeText", "drawImage", "putImageData"]) {
+    const draw = g[m];
+    g[m] = function () {
+      drawn = true;
+      return draw.apply(this, arguments);
+    };
+  }
+  let painted = true;
+  let fxPainted = true;
 
   const GREEN = "#6dff8a";
   const AMBER = "#ffc24a";
@@ -191,8 +203,9 @@
   // ---- weather over the view ----------------------------------------------------------------------------------
   // Rain and snow are in the 3D scene and on its lens (src/weather/precip.rs); lightning lights up the view here.
   function weatherFx(fx) {
-    fg.clearRect(0, 0, W, H);
-    if (fx.flash > 0.02) {
+    if (fxPainted) fg.clearRect(0, 0, W, H);
+    fxPainted = fx.flash > 0.02;
+    if (fxPainted) {
       fg.fillStyle = `rgba(235,240,255,${Math.min(0.55, fx.flash * 0.5)})`;
       fg.fillRect(0, 0, W, H);
     }
@@ -358,7 +371,15 @@
     window.__hudState = s;
     size();
     if (s.base.fx) weatherFx(s.base.fx);
-    g.clearRect(0, 0, W, H);
+    if (painted) g.clearRect(0, 0, W, H);
+    drawn = false;
+    try {
+      frame(s);
+    } finally {
+      painted = drawn;
+    }
+  };
+  function frame(s) {
     g.save();
     // A flight (flight.js) has its own flight deck (cockpit.js).
     if (s.base.flight && window.__cockpit?.(s, g, W, H)) {
@@ -378,5 +399,5 @@
     }
     g.restore();
     banner(s);
-  };
+  }
 })();

@@ -53,11 +53,18 @@
     sc.last = now;
     g.save();
     const f = window.__deckFlight ?? s?.base?.flight;
-    if(name === "engine") {
-      enginePage(g,w,h,f,s);g.restore();return g.getImageData(0,0,w,h).data;
-    }
-    if(name === "radio") {
-      radioPage(g,w,h,f,s);g.restore();return g.getImageData(0,0,w,h).data;
+    // The light aircraft's engine and radio pages change only with what they show: an unchanged page is not drawn
+    // and read back again (the needles to a fraction of a pixel).
+    if(name === "engine" || name === "radio") {
+      const page = name === "engine" ? engineGauges(f,s) : radioRows(f,s);
+      const key = JSON.stringify(name === "engine" ? page.map(([, value, min, max]) => Number.isFinite(value) ? Math.round(clamp((value-min)/(max-min),0,1)*2000) : null) : page);
+      if (key !== sc.key || !sc.pixels) {
+        if(name === "engine") enginePage(g,w,h,page); else radioPage(g,w,h,page);
+        sc.pixels = g.getImageData(0,0,w,h).data;
+        sc.key = key;
+      }
+      g.restore();
+      return sc.pixels;
     }
     const drawn = f?.ap && window.__flightScreens?.(name, g, w, h, f, dt);
     g.restore();
@@ -69,13 +76,16 @@
     return g.getImageData(0, 0, w, h).data;
   };
 
-  function enginePage(g,w,h,f,s) {
-    g.fillStyle="#242522";g.fillRect(0,0,w,h);
-    const gauges=[
+  function engineGauges(f,s) {
+    return [
       ["RPM",s?.rpm??f?.eng?.rpm,0,3000,"×100",100],
       ["POWER",(s?.throttle??f?.eng?.lever??0)*100,0,100,"PERCENT",1],
       ["FUEL",f?.fuel,0,200,"kg",1],
     ];
+  }
+
+  function enginePage(g,w,h,gauges) {
+    g.fillStyle="#242522";g.fillRect(0,0,w,h);
     gauges.forEach(([label,value,min,max,unit,scale],i)=>{
       const x=176+i*336,y=h/2,r=135;
       g.save();g.translate(x,y);
@@ -96,15 +106,18 @@
     });
   }
 
-  function radioPage(g,w,h,f,s) {
-    g.fillStyle="#171c20";g.fillRect(0,0,w,h);
-    const rows=[
+  function radioRows(f,s) {
+    return [
       ["AUDIO PANEL", "COM 1   NAV 1", "INTERCOM · ACTIVE"],
       ["COM 1 · AIRPORT", window.__flightInfo?.dep?.freqs?.[0]?.[1] || "—", f?.dep?.icao || "NO STATION SELECTED"],
       ["NAVIGATION", f?.wp?.id || "LOCAL", f?.wp?"BRG "+Math.round(f.wp.brg||0)+"°":"NO FLIGHT PLAN"],
       ["FLIGHT GUIDANCE", f?.ap?.ap?"AUTOPILOT":"MANUAL", f?.ap?.ap?f.ap.lat+" · "+f.ap.vert:"PILOT CONTROL"],
       ["ENGINE · RPM", Math.round(s?.rpm??f?.eng?.rpm??0).toLocaleString("en"), "POWER "+Math.round((s?.throttle??f?.eng?.lever??0)*100)+" %"],
     ];
+  }
+
+  function radioPage(g,w,h,rows) {
+    g.fillStyle="#171c20";g.fillRect(0,0,w,h);
     rows.forEach(([label,value,detail],i)=>{const y=i*h/5;g.fillStyle="#313b43";g.fillRect(8,y+8,w-16,h/5-12);g.fillStyle="#070f12";g.fillRect(24,y+42,w-48,116);g.fillStyle="#c2cbd0";g.font="20px monospace";g.fillText(label,26,y+32);g.fillStyle=i===4?"#ffd18b":"#8eeac4";g.font="bold 38px monospace";g.fillText(String(value),36,y+94);g.fillStyle="#a6b9bc";g.font="17px monospace";g.fillText(detail,36,y+132);for(const x of [30,w-30]){g.fillStyle="#151b20";g.beginPath();g.arc(x,y+182,12,0,Math.PI*2);g.fill();g.strokeStyle="#87919a";g.stroke();}g.fillStyle="#9aa8b2";g.font="14px monospace";g.fillText(i===0?"VOL     MIC     MON":"SEL       MODE       ENT",72,y+188);});
   }
 

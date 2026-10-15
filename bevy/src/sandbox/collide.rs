@@ -7,9 +7,15 @@
 //!   as well as where it eases to.
 //! - Vehicles take other vehicles' models as solid: their ground rays stand them on them, their wall rays stop at them.
 
+use bevy::camera::primitives::Aabb;
+use bevy::math::bounding::Aabb3d;
+use bevy::picking::mesh_picking::ray_cast::ray_aabb_intersection_3d;
 use bevy::prelude::*;
 
 use super::{NoHit, VehicleMesh};
+
+/// The meshes' bounds, for `within`.
+pub(super) type Bounds<'w, 's> = Query<'w, 's, (&'static Aabb, &'static GlobalTransform)>;
 
 /// How far the free camera keeps off surfaces (m): more than the near plane, so a wall never cuts into the view.
 pub(super) const CLEARANCE: f32 = 1.5;
@@ -23,6 +29,17 @@ pub(super) fn solid_for<'a>(own: Option<Entity>, meshes: &'a Query<&VehicleMesh>
     move |e| !no_hit.contains(e) && meshes.get(e).map_or(true, |m| Some(m.0) != own)
 }
 
+/// `solid`, less the meshes whose bounds `ray` enters only beyond `reach` (m). A cast tests every triangle of each mesh
+/// whose bounds it passes through, nearest first, until it has a hit: along a ray that meets nothing nearby (level
+/// flight over the tiles, the sky behind a chase camera) that is tile after tile to the horizon. Where only a hit
+/// within `reach` matters, those further away are never looked at.
+pub(super) fn within<'a>(ray: Ray3d, reach: f32, bounds: &'a Bounds, solid: impl Fn(Entity) -> bool + 'a) -> impl Fn(Entity) -> bool + 'a {
+    move |e| {
+        solid(e)
+            && bounds.get(e).map_or(true, |(aabb, gt)| ray_aabb_intersection_3d(ray, &Aabb3d::new(aabb.center, aabb.half_extents), &gt.affine()).is_some_and(|near| near <= reach))
+    }
+}
+
 /// Whether a ray hit a vehicle's model rather than the world.
 pub(super) fn is_model(meshes: &Query<&VehicleMesh>, e: Entity) -> bool {
     meshes.contains(e)
@@ -30,7 +47,7 @@ pub(super) fn is_model(meshes: &Query<&VehicleMesh>, e: Entity) -> bool {
 
 /// Moves the free camera from `from` by `motion`: it stops short of whatever is in the way and slides along it, keeps
 /// off the ground, and comes up out of the surface if it finds itself under it. Returns where it ends up.
-pub(super) fn move_free_camera(ray_cast: &mut MeshRayCast, meshes: &Query<&VehicleMesh>, no_hit: &Query<(), With<NoHit>>, from: Vec3, motion: Vec3) -> Vec3 {
+pub(super) fn move_free_camera(ray_cast: &mut MeshRayCast, meshes: &Query<&VehicleMesh>, no_hit: &Query<(), With<NoHit>>, bounds: &Bounds, from: Vec3, motion: Vec3) -> Vec3 {
     let solid = solid_for(None, meshes, no_hit);
     let settings = MeshRayCastSettings::default().with_filter(&solid).with_visibility(RayCastVisibility::Visible).always_early_exit();
     let mut at = from;
@@ -39,8 +56,11 @@ pub(super) fn move_free_camera(ray_cast: &mut MeshRayCast, meshes: &Query<&Vehic
         let len = left.length();
         let Ok(dir) = Dir3::new(left) else { break };
         // Where along the move the camera stops: its clearance off the surface, measured square to it (further along
-        // a glancing ray, up to a limit, so skimming along a wall does not stop dead).
-        let stop = ray_cast.cast_ray(Ray3d::new(at, dir), &settings).first().and_then(|(_, h)| {
+        // a glancing ray, up to a limit, so skimming along a wall does not stop dead). Nothing further than the move
+        // and that clearance stops it.
+        let ray = Ray3d::new(at, dir);
+        let near = within(ray, len + CLEARANCE / 0.25 + 1.0, bounds, &solid);
+        let stop = ray_cast.cast_ray(ray, &MeshRayCastSettings::default().with_filter(&near).with_visibility(RayCastVisibility::Visible).always_early_exit()).first().and_then(|(_, h)| {
             let normal = h.normal.normalize_or_zero();
             let facing = -dir.dot(normal);
             Some((h.distance - CLEARANCE / facing.max(0.25), normal)).filter(|(stop, _)| *stop < len)
@@ -75,12 +95,13 @@ fn unbury(ray_cast: &mut MeshRayCast, meshes: &Query<&VehicleMesh>, no_hit: &Que
 }
 
 /// Pulls a camera looking at `pivot` in to just short of anything between them (the world, and models but `own`).
-pub(super) fn clear_line(ray_cast: &mut MeshRayCast, meshes: &Query<&VehicleMesh>, no_hit: &Query<(), With<NoHit>>, own: Entity, pivot: Vec3, eye: Vec3) -> Vec3 {
+pub(super) fn clear_line(ray_cast: &mut MeshRayCast, meshes: &Query<&VehicleMesh>, no_hit: &Query<(), With<NoHit>>, bounds: &Bounds, own: Entity, pivot: Vec3, eye: Vec3) -> Vec3 {
     let back = eye - pivot;
     let Ok(dir) = Dir3::new(back) else { return eye };
-    let solid = solid_for(Some(own), meshes, no_hit);
+    let ray = Ray3d::new(pivot, dir);
+    let solid = within(ray, back.length() + 1.0, bounds, solid_for(Some(own), meshes, no_hit));
     let settings = MeshRayCastSettings::default().with_filter(&solid).with_visibility(RayCastVisibility::Visible).always_early_exit();
-    match ray_cast.cast_ray(Ray3d::new(pivot, dir), &settings).first() {
+    match ray_cast.cast_ray(ray, &settings).first() {
         Some((_, h)) if h.distance < back.length() => pivot + *dir * (h.distance - 1.0).max(1.0),
         _ => eye,
     }
@@ -120,7 +141,7 @@ mod tests {
 
     fn fly(app: &mut App, from: Vec3, motion: Vec3) -> Vec3 {
         app.world_mut()
-            .run_system_once(move |mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>| move_free_camera(&mut ray_cast, &meshes, &no_hit, from, motion))
+            .run_system_once(move |mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>, bounds: Bounds| move_free_camera(&mut ray_cast, &meshes, &no_hit, &bounds, from, motion))
             .unwrap()
     }
 
@@ -194,8 +215,8 @@ mod tests {
         // The chase camera is pulled in in front of another vehicle's model, not its own.
         let chase = |app: &mut App, own: Entity| {
             app.world_mut()
-                .run_system_once(move |mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>| {
-                    clear_line(&mut ray_cast, &meshes, &no_hit, own, Vec3::new(0.0, 3.0, 0.0), Vec3::new(40.0, 3.0, 0.0))
+                .run_system_once(move |mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>, bounds: Bounds| {
+                    clear_line(&mut ray_cast, &meshes, &no_hit, &bounds, own, Vec3::new(0.0, 3.0, 0.0), Vec3::new(40.0, 3.0, 0.0))
                 })
                 .unwrap()
         };

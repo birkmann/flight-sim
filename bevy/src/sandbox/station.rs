@@ -11,7 +11,6 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 
 use super::{Part, Pilot, Role, Vehicle, View};
-use crate::js;
 
 /// What a screen shows (`CockpitDisplay` in the model).
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -157,14 +156,16 @@ pub(super) fn wire_screens(
             let extent = Extent3d { width: size.x, height: size.y, depth_or_array_layers: 1 };
             // Kept on the CPU side as well: it is rewritten in place.
             let image = images.add(Image::new_fill(extent, TextureDimension::D2, &[4, 7, 10, 255], TextureFormat::Rgba8UnormSrgb, RenderAssetUsages::default()));
-            // Analogue faceplates receive cabin light; electronic displays emit it.
+            // Analogue faceplates receive cabin light, plus a faint post-light of their own (alpha 0: in display
+            // units, past the camera's exposure, so it reads the same under the midday sun and at night); electronic
+            // displays emit it.
             let analogue = matches!(d, Display::Ga | Display::Engine);
             let material = materials.add(StandardMaterial {
                 base_color_texture: Some(image.clone()),
                 unlit: !analogue,
                 perceptual_roughness: 0.78,
                 emissive_texture: analogue.then(|| image.clone()),
-                emissive: if analogue { LinearRgba::rgb(0.06, 0.06, 0.06) } else { LinearRgba::BLACK },
+                emissive: if analogue { LinearRgba::new(0.05, 0.047, 0.04, 0.0) } else { LinearRgba::BLACK },
                 ..default()
             });
             (image, material)
@@ -190,9 +191,112 @@ pub(super) fn draw_screens(time: Res<Time>, pilot: Res<Pilot>, mut screens: ResM
     let shown: HashSet<Display> = parts.iter().filter(|p| p.vehicle == e).filter_map(|p| if let Role::Display(d) = p.role { Some(d) } else { None }).collect();
     for d in shown {
         let Some((handle, _)) = screens.pictures.get(&d) else { continue };
+        // The page is asked first: a picture it hasn't redrawn (the same array as last time) is left alone, as taking
+        // the image to write marks it changed, and it then goes up to the GPU whole again.
+        let Some(picture) = page::picture(d.name()) else { continue };
         let Some(mut image) = images.get_mut(handle) else { continue };
         if let Some(data) = image.data.as_mut() {
-            js::display_pixels(d.name(), data);
+            picture.copy_to(data);
+        }
+    }
+}
+
+/// The page's pictures for the screens (`window.__display(name)`, displays.js).
+#[cfg(target_arch = "wasm32")]
+mod page {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+
+    use wasm_bindgen::{JsCast, JsValue};
+
+    thread_local! {
+        /// The array each screen was last given: the page hands back the same one while its picture is unchanged.
+        static LAST: RefCell<HashMap<&'static str, JsValue>> = RefCell::new(HashMap::new());
+    }
+
+    pub(super) struct Picture(js_sys::Uint8ClampedArray);
+
+    impl Picture {
+        pub(super) fn copy_to(&self, out: &mut [u8]) {
+            if self.0.length() as usize == out.len() {
+                self.0.copy_to(out);
+            }
+        }
+    }
+
+    /// A screen's picture, when the page has drawn a new one since it was last asked.
+    pub(super) fn picture(name: &'static str) -> Option<Picture> {
+        let win = web_sys::window()?;
+        let f = js_sys::Reflect::get(&win, &JsValue::from_str("__display")).ok()?.dyn_into::<js_sys::Function>().ok()?;
+        let pixels = f.call1(&JsValue::NULL, &JsValue::from_str(name)).ok()?;
+        let same = LAST.with_borrow(|last| last.get(name).is_some_and(|was| js_sys::Object::is(was, &pixels)));
+        if same {
+            return None;
+        }
+        let array = pixels.clone().dyn_into::<js_sys::Uint8ClampedArray>().ok()?;
+        LAST.with_borrow_mut(|last| last.insert(name, pixels));
+        Some(Picture(array))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+mod page {
+    pub(super) struct Picture;
+
+    impl Picture {
+        pub(super) fn copy_to(&self, _out: &mut [u8]) {}
+    }
+
+    pub(super) fn picture(_name: &'static str) -> Option<Picture> {
+        None
+    }
+}
+
+/// The light a cabin's glareshield, floor and sills throw back into it from the sun and the sky. The renderer has no
+/// bounced light, so under the roof only the sky's direct share lit the panel, and a midday cockpit read as dusk: a
+/// soft, shadowless point above and behind the crew's eyes stands in for it, as strong as the daylight. None at night,
+/// when the instruments' own lighting takes over.
+#[derive(Component)]
+pub(super) struct CabinFill;
+
+/// The fill's output in full daylight (lm), set by eye: the panel and the cabin read as they do to eyes adapted to the
+/// cabin, while the view outside keeps the exposure for the sunlit world.
+const CABIN_FILL_LM: f32 = 4_000_000.0;
+
+pub(super) fn cabin_fill(
+    mut commands: Commands,
+    pilot: Res<Pilot>,
+    sky: Res<crate::weather::Sky>,
+    parts: Query<(&Part, &GlobalTransform)>,
+    vehicles: Query<(&GlobalTransform, &Transform), With<Vehicle>>,
+    mut fill: Query<(&mut PointLight, &mut Transform, &mut Visibility), (With<CabinFill>, Without<Vehicle>)>,
+) {
+    let Ok((mut light, mut tf, mut vis)) = fill.single_mut() else {
+        commands.spawn((
+            CabinFill,
+            PointLight { intensity: 0.0, range: 4.0, radius: 0.4, shadow_maps_enabled: false, color: Color::srgb(1.0, 0.96, 0.9), ..default() },
+            Transform::default(),
+            Visibility::Hidden,
+        ));
+        return;
+    };
+    let at = pilot
+        .vehicle
+        .filter(|_| pilot.view == View::Cockpit && sky.daylight > 0.01)
+        .and_then(|e| {
+            let (was, now) = vehicles.get(e).ok()?;
+            has_station(&parts, e).then_some(())?;
+            let (eye, _) = eye(&parts, e, was, now)?;
+            Some(eye + now.rotation * Vec3::new(0.0, 0.25, 0.3))
+        });
+    match at {
+        Some(p) => {
+            tf.translation = p;
+            light.intensity = CABIN_FILL_LM * sky.daylight;
+            vis.set_if_neq(Visibility::Inherited);
+        }
+        None => {
+            vis.set_if_neq(Visibility::Hidden);
         }
     }
 }

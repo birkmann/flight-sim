@@ -32,6 +32,8 @@ mod collide;
 mod exhaust;
 mod flight;
 mod globe;
+mod paint;
+mod shadow;
 mod station;
 
 
@@ -50,6 +52,7 @@ impl Plugin for SandboxPlugin {
             .add_plugins(crate::weather::WeatherPlugin)
             .add_plugins(flight::FlightPlugin)
             .add_plugins(exhaust::ExhaustPlugin)
+            .add_plugins((paint::PaintPlugin, shadow::ShadowPlugin))
             .add_systems(PostStartup, setup)
             .add_systems(
                 Update,
@@ -57,7 +60,7 @@ impl Plugin for SandboxPlugin {
                     (read_pad, globe::place_spawns.before(apply_commands), apply_commands, net_receive, grab_cursor, keys, spawn_hotkeys, tag_parts, measure_vehicles, read_controls),
                     // Land vehicles move, find the ground where they moved to, and settle on it in the same frame.
                     (fly_free, globe::fly_to.after(fly_free), probe_ground, fly_aircraft, wrecks),
-                    (place_ghosts, animate_parts, animate_blasts, station::show_station, station::wire_screens, place_camera, station::draw_screens),
+                    (place_ghosts, animate_parts, animate_blasts, station::show_station, station::wire_screens, place_camera, station::draw_screens, station::cabin_fill),
                     // Before the tiles' pass, so it re-places them for a new origin in the same frame (`rebase`).
                     (rebase.before(Tiles3dSet::Drive), globe::tile_detail, net_send, hud),
                 )
@@ -1469,6 +1472,7 @@ fn fly_free(
     mut ray_cast: MeshRayCast,
     meshes: Query<&VehicleMesh>,
     no_hit: Query<(), With<NoHit>>,
+    bounds: collide::Bounds,
 ) {
     let m = mouse(&pilot, &settings, &motion);
     // The mouse looks when it is not flying something: free camera, chase orbit, turret aim, gimbal, head.
@@ -1576,7 +1580,7 @@ fn fly_free(
     let len = dir.length();
     // Solid: it slides along buildings, models and the ground rather than into them (`collide`).
     let step = if len > 1.0 { dir / len } else { dir } * pilot.speed * boost * dt;
-    cam.translation = collide::move_free_camera(&mut ray_cast, &meshes, &no_hit, cam.translation, step);
+    cam.translation = collide::move_free_camera(&mut ray_cast, &meshes, &no_hit, &bounds, cam.translation, step);
     cam.rotation = rot;
 }
 
@@ -1646,7 +1650,7 @@ fn ground_under(contacts: &mut [Option<Vec3>; 6], last: Option<GroundPlane>) -> 
 /// Rays down onto the mesh: one under an aircraft, six under a land vehicle's running gear (its suspension, which
 /// `settle_ground` then sets on them). Parked vehicles are probed twice a second, moving ones every frame; ships keep
 /// the water level they were launched on.
-fn probe_ground(time: Res<Time>, mut vehicles: Query<(Entity, &Transform, &mut Vehicle)>, mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>) {
+fn probe_ground(time: Res<Time>, mut vehicles: Query<(Entity, &Transform, &mut Vehicle)>, mut ray_cast: MeshRayCast, meshes: Query<&VehicleMesh>, no_hit: Query<(), With<NoHit>>, bounds: collide::Bounds) {
     for (e, tf, mut v) in &mut vehicles {
         if v.kind.sails() || v.is_remote() {
             continue;
@@ -1695,11 +1699,14 @@ fn probe_ground(time: Res<Time>, mut vehicles: Query<(Entity, &Transform, &mut V
             let speed = v.velocity.length();
             if v.kind.flies() && !v.on_ground && speed > 15.0 {
                 if let Ok(direction) = Dir3::new(v.velocity) {
-                    let settings = MeshRayCastSettings::default().with_filter(&filter).with_visibility(RayCastVisibility::Visible);
                     let right = tf.rotation * Vec3::X;
                     for offset in [-2.0, 0.0, 2.0] {
                         let from = tf.translation + right * offset;
-                        if let Some((_, hit)) = ray_cast.cast_ray(Ray3d::new(from, direction), &settings).first() {
+                        // Only what is closer than the warning's 12 s counts.
+                        let ray = Ray3d::new(from, direction);
+                        let ahead = collide::within(ray, 12.0 * speed + 1.0, &bounds, &filter);
+                        let settings = MeshRayCastSettings::default().with_filter(&ahead).with_visibility(RayCastVisibility::Visible);
+                        if let Some((_, hit)) = ray_cast.cast_ray(ray, &settings).first() {
                             // Allow a gentle gear-down touchdown on a nearly level surface.
                             let landing = v.gear_down && v.agl < 60.0 && v.velocity.y > -3.0 && hit.normal.y > 0.85;
                             let seconds = hit.distance / speed;
@@ -1727,6 +1734,7 @@ fn fly_aircraft(
     mut ray_cast: MeshRayCast,
     meshes: Query<&VehicleMesh>,
     no_hit: Query<(), With<NoHit>>,
+    bounds: collide::Bounds,
 ) {
     let dt = time.delta_secs().min(0.05);
     let wind = weather.wind();
@@ -1805,13 +1813,15 @@ fn fly_aircraft(
         // With no ground found below, the height is unknown: always look.
         if (v.agl < 600.0 || !v.ground_found) && !v.on_ground {
             let speed = v.velocity.length();
-            let filter = collide::solid_for(Some(e), &meshes, &no_hit);
-            let settings = MeshRayCastSettings::default().with_filter(&filter).with_visibility(RayCastVisibility::Visible).always_early_exit();
             if let Ok(dir) = Dir3::new(v.velocity) {
                 let reach = speed * dt + (-min.z).max(1.0);
                 let landing = (v.gear_down || !v.has_gear()) && v.kind != Kind::Munition;
                 let ground = v.ground + 3.0;
-                let hit = ray_cast.cast_ray(Ray3d::new(tf.translation, dir), &settings).first().map(|(_, h)| (h.distance, h.normal.y > 0.7 && h.point.y < ground));
+                // Only a wall within this frame's travel counts: the meshes further along are not tested.
+                let ray = Ray3d::new(tf.translation, dir);
+                let filter = collide::within(ray, reach + 1.0, &bounds, collide::solid_for(Some(e), &meshes, &no_hit));
+                let settings = MeshRayCastSettings::default().with_filter(&filter).with_visibility(RayCastVisibility::Visible).always_early_exit();
+                let hit = ray_cast.cast_ray(ray, &settings).first().map(|(_, h)| (h.distance, h.normal.y > 0.7 && h.point.y < ground));
                 if hit.is_some_and(|(distance, runway)| distance < reach && !(landing && runway)) {
                     v.destroyed = Some(if v.kind == Kind::Munition { "IMPACT" } else { "CRASHED" });
                 }
@@ -2032,7 +2042,7 @@ fn animate_parts(time: Res<Time>, mut vehicles: Query<&mut Vehicle>, mut parts: 
         } else {
             !tucked
         };
-        *tf = match part.role {
+        let pose = match part.role {
             // The model's turret node traverses to the right on positive rotation.
             Role::Turret => part.rest * Transform::from_rotation(Quat::from_rotation_x(-v.turret)),
             Role::Gun => part.rest * Transform::from_rotation(Quat::from_rotation_x(v.gun)),
@@ -2091,6 +2101,9 @@ fn animate_parts(time: Res<Time>, mut vehicles: Query<&mut Vehicle>, mut parts: 
             }
             _ => part.rest,
         };
+        // Only a pose that moved is written: a write marks the node changed, and its whole subtree (a modelled
+        // cockpit is hundreds of meshes) is then re-propagated and re-extracted for rendering.
+        tf.set_if_neq(pose);
     }
 }
 
@@ -2228,6 +2241,7 @@ fn place_camera(
     mut ray_cast: MeshRayCast,
     meshes: Query<&VehicleMesh>,
     no_hit: Query<(), With<NoHit>>,
+    bounds: collide::Bounds,
     // The chase camera's offset from what it looks at, last frame.
     mut carried: Local<Option<(Entity, Vec3)>>,
     // The aircraft rotation the chase camera has caught up with.
@@ -2307,7 +2321,7 @@ fn place_camera(
     // and the vehicle (here, and again once eased below, so easing out from a wall does not swing through it).
     let mut want = want;
     if pilot.view == View::Chase {
-        want.translation = collide::clear_line(&mut ray_cast, &meshes, &no_hit, e, pivot, want.translation);
+        want.translation = collide::clear_line(&mut ray_cast, &meshes, &no_hit, &bounds, e, pivot, want.translation);
     }
     // The chase camera rides along with the vehicle and eases only toward its place around it, so it keeps its
     // distance at any speed (easing the position itself trailed a jet by a tenth of its speed: 35 m at 350 m/s).
@@ -2317,7 +2331,7 @@ fn place_camera(
     let k = if pilot.view == View::Chase { (10.0 * dt).min(1.0) } else { 1.0 };
     cam_tf.translation = cam_tf.translation.lerp(want.translation, k);
     if pilot.view == View::Chase {
-        cam_tf.translation = collide::clear_line(&mut ray_cast, &meshes, &no_hit, e, pivot, cam_tf.translation);
+        cam_tf.translation = collide::clear_line(&mut ray_cast, &meshes, &no_hit, &bounds, e, pivot, cam_tf.translation);
     }
     cam_tf.rotation = cam_tf.rotation.slerp(want.rotation, k);
     *carried = chase.then(|| (e, cam_tf.translation - pivot));
